@@ -1,0 +1,55 @@
+import React, { useState } from 'react';
+import { LiveView } from './components/LiveView.js';
+import { TodayView } from './components/TodayView.js';
+import { HistoryView } from './components/HistoryView.js';
+
+type Tab = 'live' | 'today' | 'history';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'live',    label: 'Live' },
+  { id: 'today',   label: 'Today' },
+  { id: 'history', label: 'History' },
+];
+
+export default function App() {
+  const [tab, setTab] = useState<Tab>('live');
+
+  return (
+    <div>
+      <header style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0', marginBottom: 16 }}>
+          Portland International Raceway — Noise Monitor
+        </h1>
+        <nav style={{ display: 'flex', gap: 4 }}>
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={tabStyle(tab === t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      </header>
+
+      {tab === 'live'    && <LiveView />}
+      {tab === 'today'   && <TodayView />}
+      {tab === 'history' && <HistoryView />}
+    </div>
+  );
+}
+
+function tabStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: '6px 18px',
+    borderRadius: 6,
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 500,
+    background: active ? '#3b82f6' : '#1e293b',
+    color:  active ? '#fff' : '#94a3b8',
+    transition: 'background 0.15s',
+  };
+}
