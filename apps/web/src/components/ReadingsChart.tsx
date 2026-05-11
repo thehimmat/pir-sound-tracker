@@ -37,6 +37,7 @@ export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN }: Props) {
     .map(r => ({ ts: r.ts, db: r.raw_db as number }));
 
   return (
+    <>
     <ResponsiveContainer width="100%" height={260}>
       <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -74,5 +75,9 @@ export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN }: Props) {
         />
       </LineChart>
     </ResponsiveContainer>
+    <p style={{ margin: '6px 0 0', fontSize: 11, color: '#475569' }}>
+      Isolated dips may be read errors — the OCR occasionally misreads a digit on the display rather than reflecting a real drop in noise level.
+    </p>
+    </>
   );
 }
