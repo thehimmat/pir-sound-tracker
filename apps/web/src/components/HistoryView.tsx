@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { DailySummary } from '@pir/types';
 import { useApi } from '../hooks/useApi.js';
-import { HistoryChart } from './HistoryChart.js';
 import { DayView } from './DayView.js';
 
 export function HistoryView() {
@@ -12,49 +11,46 @@ export function HistoryView() {
 
   const rows = summaries ?? [];
 
+  if (rows.length === 0) {
+    return <div style={{ color: '#64748b', textAlign: 'center', padding: 40 }}>No historical data yet.</div>;
+  }
+
   return (
     <div>
-      {rows.length === 0 ? (
-        <div style={{ color: '#64748b', textAlign: 'center', padding: 40 }}>No historical data yet.</div>
-      ) : (
-        <>
-          <HistoryChart summaries={rows} onDayClick={setSelectedDate} />
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <Th>Date</Th>
-                <Th>High dB</Th>
-                <Th>Violations</Th>
-                <Th>Readings</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(s => (
-                <tr
-                  key={s.date}
-                  onClick={() => setSelectedDate(s.date === selectedDate ? null : s.date)}
-                  style={{ cursor: 'pointer', background: selectedDate === s.date ? '#1e293b' : 'transparent' }}
-                >
-                  <Td>{s.date}</Td>
-                  <Td style={{ color: s.high_db !== null && s.high_db >= 105 ? '#ef4444' : '#e2e8f0' }}>
-                    {s.high_db !== null ? `${s.high_db.toFixed(1)} dB` : '—'}
-                  </Td>
-                  <Td style={{ color: s.violation_count > 0 ? '#ef4444' : '#e2e8f0' }}>
-                    {s.violation_count}
-                  </Td>
-                  <Td>{s.reading_count}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <table style={tableStyle}>
+        <thead>
+          <tr>
+            <Th>Date</Th>
+            <Th>High dB</Th>
+            <Th>Violations</Th>
+            <Th>Readings</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(s => (
+            <tr
+              key={s.date}
+              onClick={() => setSelectedDate(s.date === selectedDate ? null : s.date)}
+              style={{ cursor: 'pointer', background: selectedDate === s.date ? '#1e293b' : 'transparent' }}
+            >
+              <Td>{s.date}</Td>
+              <Td style={{ color: s.high_db !== null && s.high_db >= 105 ? '#ef4444' : '#e2e8f0' }}>
+                {s.high_db !== null ? `${s.high_db.toFixed(1)} dB` : '—'}
+              </Td>
+              <Td style={{ color: s.violation_count > 0 ? '#ef4444' : '#e2e8f0' }}>
+                {s.violation_count}
+              </Td>
+              <Td>{s.reading_count}</Td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-          {selectedDate && (
-            <div style={{ marginTop: 28, borderTop: '1px solid #1e293b', paddingTop: 20 }}>
-              <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 12 }}>{selectedDate}</div>
-              <DayView date={selectedDate} />
-            </div>
-          )}
-        </>
+      {selectedDate && (
+        <div style={{ marginTop: 28, borderTop: '1px solid #1e293b', paddingTop: 20 }}>
+          <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 12 }}>{selectedDate}</div>
+          <DayView date={selectedDate} />
+        </div>
       )}
     </div>
   );
@@ -63,7 +59,6 @@ export function HistoryView() {
 const tableStyle: React.CSSProperties = {
   width: '100%',
   borderCollapse: 'collapse',
-  marginTop: 20,
   fontSize: 13,
 };
 

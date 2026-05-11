@@ -51,7 +51,7 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick }: Props) {
           cursor={{ fill: '#1e293b' }}
         />
         <ReferenceLine y={105} stroke="#ef4444" strokeDasharray="6 3" />
-        <Bar dataKey="high_db" radius={[2, 2, 0, 0]} isAnimationActive={false} style={{ cursor: 'pointer' }}>
+        <Bar dataKey="high_db" maxBarSize={8} radius={[2, 2, 0, 0]} isAnimationActive={false} style={{ cursor: 'pointer' }}>
           {blocks.map(b => (
             <Cell
               key={b.bucket_start}
