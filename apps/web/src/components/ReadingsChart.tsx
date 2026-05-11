@@ -12,6 +12,7 @@ import type { Reading } from '@pir/types';
 
 interface Props {
   readings: Reading[];
+  tickIntervalMs?: number;
 }
 
 const TEN_MIN = 10 * 60 * 1000;
@@ -20,17 +21,17 @@ function fmt(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function tenMinTicks(data: { ts: number }[]): number[] {
+function computeTicks(data: { ts: number }[], intervalMs: number): number[] {
   if (data.length === 0) return [];
   const first = data[0].ts;
   const last  = data[data.length - 1].ts;
-  const start = Math.ceil(first / TEN_MIN) * TEN_MIN;
+  const start = Math.ceil(first / intervalMs) * intervalMs;
   const ticks: number[] = [];
-  for (let t = start; t <= last; t += TEN_MIN) ticks.push(t);
+  for (let t = start; t <= last; t += intervalMs) ticks.push(t);
   return ticks;
 }
 
-export function ReadingsChart({ readings }: Props) {
+export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN }: Props) {
   const data = readings
     .filter(r => r.status === 'ok' && r.raw_db !== null)
     .map(r => ({ ts: r.ts, db: r.raw_db as number }));
@@ -44,7 +45,7 @@ export function ReadingsChart({ readings }: Props) {
           type="number"
           scale="time"
           domain={['dataMin', 'dataMax']}
-          ticks={tenMinTicks(data)}
+          ticks={computeTicks(data, tickIntervalMs)}
           tickFormatter={fmt}
           tick={{ fill: '#64748b', fontSize: 11 }}
           tickLine={false}

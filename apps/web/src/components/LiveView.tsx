@@ -33,10 +33,11 @@ export function LiveView() {
     }
   }, []));
 
+  const cutoff = Date.now() - 10 * 60 * 1000;
   const allReadings: Reading[] = [
     ...(hourReadings ?? []),
     ...liveReadings,
-  ].filter((r, i, arr) => arr.findIndex(x => x.ts === r.ts) === i)
+  ].filter((r, i, arr) => r.ts >= cutoff && arr.findIndex(x => x.ts === r.ts) === i)
    .sort((a, b) => a.ts - b.ts);
 
   return (
@@ -49,7 +50,7 @@ export function LiveView() {
       )}
       <DbDisplay value={latest?.raw_db ?? null} status={latest?.status ?? null} />
       <SummaryBar readings={allReadings} />
-      <ReadingsChart readings={allReadings} />
+      <ReadingsChart readings={allReadings} tickIntervalMs={60_000} />
     </div>
   );
 }
