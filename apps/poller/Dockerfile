@@ -28,6 +28,6 @@ RUN npm run build --workspace=packages/types && \
 ENV TESSDATA_DIR=/app/tessdata
 RUN mkdir -p /app/tessdata && \
     curl -fsSL "https://tessdata.projectnaptha.com/4.0.0/eng.traineddata.gz" \
-      | gunzip -c > /app/tessdata/eng.traineddata
+      -o /app/tessdata/eng.traineddata.gz
 
 CMD ["node", "apps/poller/dist/index.js"]
