@@ -40,7 +40,7 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick }: Props) {
           ticks={blocks.filter((_, i) => i % 6 === 0).map(b => b.bucket_start)}
           tick={{ fill: '#64748b', fontSize: 11 }}
           tickLine={false}
-          padding={{ left: 16, right: 16 }}
+          padding={{ left: 60, right: 20 }}
         />
         <YAxis domain={[30, 130]} tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} width={36} />
         <Tooltip
