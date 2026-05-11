@@ -51,12 +51,12 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick }: Props) {
           formatter={(v: number) => [`${v.toFixed(1)} dB`, 'Peak']}
           cursor={{ fill: '#1e293b' }}
         />
-        <ReferenceLine y={105} stroke="#ef4444" strokeDasharray="6 3" />
+        <ReferenceLine y={103} stroke="#ef4444" strokeDasharray="6 3" />
         <Bar dataKey="high_db" maxBarSize={8} radius={[2, 2, 0, 0]} isAnimationActive={false} style={{ cursor: 'pointer' }}>
           {blocks.map(b => (
             <Cell
               key={b.bucket_start}
-              fill={b.bucket_start === selectedBucket ? '#3b82f6' : (b.high_db ?? 0) >= 105 ? '#ef4444' : '#22c55e'}
+              fill={b.bucket_start === selectedBucket ? '#3b82f6' : (b.high_db ?? 0) >= 103 ? '#ef4444' : '#22c55e'}
             />
           ))}
         </Bar>

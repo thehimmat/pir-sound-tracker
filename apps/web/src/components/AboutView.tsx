@@ -42,12 +42,16 @@ export function AboutView() {
         >
           1989 agreement
         </a>{' '}
-        with North Portland neighborhood groups, the standard limit during normal
-        operations is <strong style={{ color: '#e2e8f0' }}>103 dBA</strong> at trackside.
-        The facility also permits up to four variance events per year at higher limits
-        (110–115 dB). The red dashed line on charts marks{' '}
-        <strong style={{ color: '#e2e8f0' }}>105 dB</strong> as a reference point;
-        readings at or above that level are highlighted in red.
+        with North Portland neighborhood groups, the Portland city code sets a
+        trackside limit of <strong style={{ color: '#e2e8f0' }}>105 dBA</strong>.
+        In practice, motorsport events use a stricter operational limit of{' '}
+        <strong style={{ color: '#e2e8f0' }}>103 dBA</strong> — sound engineers
+        determined this more accurately corresponds to 65 dB at the nearest
+        residence. Vehicles exceeding 103 dBA are subject to removal from
+        competition. The facility also permits up to four variance events per year
+        at higher limits (110–115 dB). The red dashed line on charts marks the
+        103 dBA operational limit; readings at or above that level are highlighted
+        in red.
       </p>
 
       <h3 style={h3}>Data retention</h3>

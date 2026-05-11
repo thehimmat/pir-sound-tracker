@@ -37,12 +37,12 @@ export function HistoryChart({ summaries, onDayClick }: Props) {
           itemStyle={{ color: '#22c55e' }}
           formatter={(v: number) => [`${v.toFixed(1)} dB`, 'High']}
         />
-        <ReferenceLine y={105} stroke="#ef4444" strokeDasharray="6 3" />
+        <ReferenceLine y={103} stroke="#ef4444" strokeDasharray="6 3" />
         <Bar dataKey="high_db" radius={[3, 3, 0, 0]}>
           {summaries.map(s => (
             <Cell
               key={s.date}
-              fill={s.high_db !== null && s.high_db >= 105 ? '#ef4444' : '#22c55e'}
+              fill={s.high_db !== null && s.high_db >= 103 ? '#ef4444' : '#22c55e'}
             />
           ))}
         </Bar>

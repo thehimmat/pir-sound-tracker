@@ -10,7 +10,7 @@ export function SummaryBar({ readings }: Props) {
   const highDb = valid.length > 0
     ? Math.max(...valid.map(r => r.raw_db as number))
     : null;
-  const violations = valid.filter(r => (r.raw_db as number) >= 105).length;
+  const violations = valid.filter(r => (r.raw_db as number) >= 103).length;
 
   return (
     <div style={{
@@ -25,7 +25,7 @@ export function SummaryBar({ readings }: Props) {
     }}>
       <span>
         High:{' '}
-        <strong style={{ color: highDb !== null && highDb >= 105 ? '#ef4444' : '#e2e8f0' }}>
+        <strong style={{ color: highDb !== null && highDb >= 103 ? '#ef4444' : '#e2e8f0' }}>
           {highDb !== null ? `${highDb.toFixed(1)} dB` : '—'}
         </strong>
       </span>

@@ -64,7 +64,7 @@ export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN }: Props) {
           labelFormatter={(ts: number) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           formatter={(v: number) => [`${v.toFixed(1)} dB`, 'Level']}
         />
-        <ReferenceLine y={105} stroke="#ef4444" strokeDasharray="6 3" label={{ value: '105 dB', fill: '#ef4444', fontSize: 11 }} />
+        <ReferenceLine y={103} stroke="#ef4444" strokeDasharray="6 3" label={{ value: '103 dB', fill: '#ef4444', fontSize: 11 }} />
         <Line
           type="monotone"
           dataKey="db"

@@ -8,7 +8,7 @@ interface Props {
 
 function dbColor(value: number | null): string {
   if (value === null) return '#94a3b8';
-  if (value >= 105) return '#ef4444';
+  if (value >= 103) return '#ef4444';
   if (value >= 90)  return '#f59e0b';
   return '#22c55e';
 }
