@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   LineChart,
   Line,
@@ -15,23 +14,39 @@ interface Props {
   readings: Reading[];
 }
 
+const TEN_MIN = 10 * 60 * 1000;
+
 function fmt(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function tenMinTicks(data: { ts: number }[]): number[] {
+  if (data.length === 0) return [];
+  const first = data[0].ts;
+  const last  = data[data.length - 1].ts;
+  const start = Math.ceil(first / TEN_MIN) * TEN_MIN;
+  const ticks: number[] = [];
+  for (let t = start; t <= last; t += TEN_MIN) ticks.push(t);
+  return ticks;
 }
 
 export function ReadingsChart({ readings }: Props) {
   const data = readings
     .filter(r => r.status === 'ok' && r.raw_db !== null)
-    .map(r => ({ ts: r.ts, db: r.raw_db as number, time: fmt(r.ts) }));
+    .map(r => ({ ts: r.ts, db: r.raw_db as number }));
 
   return (
     <ResponsiveContainer width="100%" height={260}>
       <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
         <XAxis
-          dataKey="time"
+          dataKey="ts"
+          type="number"
+          scale="time"
+          domain={['dataMin', 'dataMax']}
+          ticks={tenMinTicks(data)}
+          tickFormatter={fmt}
           tick={{ fill: '#64748b', fontSize: 11 }}
-          interval="preserveStartEnd"
           tickLine={false}
         />
         <YAxis
