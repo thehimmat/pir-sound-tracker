@@ -26,13 +26,15 @@ export async function insertReading(
 }
 
 export async function getReadingsSince(fromTs: number): Promise<Reading[]> {
+  // Fetch newest-first so the 2000-row cap keeps the most recent data, then reverse.
   const { data, error } = await getClient()
     .from('readings')
     .select('*')
     .gte('ts', fromTs)
-    .order('ts', { ascending: true });
+    .order('ts', { ascending: false })
+    .limit(2000);
   if (error) throw error;
-  return (data ?? []) as Reading[];
+  return ((data ?? []) as Reading[]).reverse();
 }
 
 export async function getReadingsForDay(dateStr: string): Promise<Reading[]> {
@@ -43,7 +45,8 @@ export async function getReadingsForDay(dateStr: string): Promise<Reading[]> {
     .select('*')
     .gte('ts', start)
     .lt('ts', end)
-    .order('ts', { ascending: true });
+    .order('ts', { ascending: true })
+    .limit(20000);
   if (error) throw error;
   return (data ?? []) as Reading[];
 }

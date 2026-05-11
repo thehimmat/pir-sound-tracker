@@ -59,6 +59,7 @@ export function ReadingsChart({ readings }: Props) {
           contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 6 }}
           labelStyle={{ color: '#94a3b8', fontSize: 11 }}
           itemStyle={{ color: '#22c55e' }}
+          labelFormatter={(ts: number) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           formatter={(v: number) => [`${v.toFixed(1)} dB`, 'Level']}
         />
         <ReferenceLine y={105} stroke="#ef4444" strokeDasharray="6 3" label={{ value: '105 dB', fill: '#ef4444', fontSize: 11 }} />

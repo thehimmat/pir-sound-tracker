@@ -27,6 +27,6 @@ export const config = {
   cropY:     envInt('CROP_Y', 46),   // percent from top — targets the large LAFmax digit
   cropW:     envInt('CROP_W', 100),  // percent of width
   cropH:     envInt('CROP_H', 34),   // percent of height
-  pollMs:    envInt('POLL_MS', 1000),
+  pollMs:    envInt('POLL_MS', 5000),
   staleAfterMs: 10_000,
 } as const;

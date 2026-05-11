@@ -6,6 +6,7 @@ primary_region = "sjc"
 
 [env]
   MOCK_MODE  = "false"
+  POLL_MS    = "5000"
   CROP_X     = "0"
   CROP_Y     = "46"
   CROP_W     = "100"
