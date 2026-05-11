@@ -19,7 +19,7 @@ export function LiveView() {
   const connected = useRealtimeReadings(useCallback((msg: WsMessage) => {
     setLatest(msg);
     setLiveReadings(prev => {
-      const cutoff = Date.now() - 60 * 60 * 1000;
+      const cutoff = Date.now() - 10 * 60 * 1000;
       return [...prev, msg as unknown as Reading].filter(r => r.ts >= cutoff);
     });
     if (msg.status === 'ok') {
