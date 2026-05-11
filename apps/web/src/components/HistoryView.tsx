@@ -1,26 +1,12 @@
 import React, { useState } from 'react';
-import type { DailySummary, Reading } from '@pir/types';
+import type { DailySummary } from '@pir/types';
 import { useApi } from '../hooks/useApi.js';
 import { HistoryChart } from './HistoryChart.js';
-import { ReadingsChart } from './ReadingsChart.js';
-import { SummaryBar } from './SummaryBar.js';
-
-const API_URL = import.meta.env.VITE_API_URL ?? '';
+import { DayView } from './DayView.js';
 
 export function HistoryView() {
   const { data: summaries, loading } = useApi<DailySummary[]>('/api/summary/history');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [dayReadings, setDayReadings] = useState<Reading[] | null>(null);
-  const [dayLoading, setDayLoading] = useState(false);
-
-  const handleDayClick = (date: string) => {
-    setSelectedDate(date);
-    setDayLoading(true);
-    fetch(`${API_URL}/api/readings/day/${date}`)
-      .then(r => r.json())
-      .then((d: Reading[]) => { setDayReadings(d); setDayLoading(false); })
-      .catch(() => setDayLoading(false));
-  };
 
   if (loading) return <div style={{ color: '#64748b', padding: '40px 0', textAlign: 'center' }}>Loading…</div>;
 
@@ -32,7 +18,7 @@ export function HistoryView() {
         <div style={{ color: '#64748b', textAlign: 'center', padding: 40 }}>No historical data yet.</div>
       ) : (
         <>
-          <HistoryChart summaries={rows} onDayClick={handleDayClick} />
+          <HistoryChart summaries={rows} onDayClick={setSelectedDate} />
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -46,7 +32,7 @@ export function HistoryView() {
               {rows.map(s => (
                 <tr
                   key={s.date}
-                  onClick={() => handleDayClick(s.date)}
+                  onClick={() => setSelectedDate(s.date === selectedDate ? null : s.date)}
                   style={{ cursor: 'pointer', background: selectedDate === s.date ? '#1e293b' : 'transparent' }}
                 >
                   <Td>{s.date}</Td>
@@ -63,17 +49,9 @@ export function HistoryView() {
           </table>
 
           {selectedDate && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 8 }}>{selectedDate}</div>
-              {dayLoading
-                ? <div style={{ color: '#64748b', textAlign: 'center', padding: 24 }}>Loading…</div>
-                : dayReadings && (
-                  <>
-                    <SummaryBar readings={dayReadings} />
-                    <ReadingsChart readings={dayReadings} />
-                  </>
-                )
-              }
+            <div style={{ marginTop: 28, borderTop: '1px solid #1e293b', paddingTop: 20 }}>
+              <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 12 }}>{selectedDate}</div>
+              <DayView date={selectedDate} />
             </div>
           )}
         </>

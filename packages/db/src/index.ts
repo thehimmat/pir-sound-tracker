@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Reading, DailySummary, ReadingStatus } from '@pir/types';
+import type { Reading, DailySummary, DayBlock, ReadingStatus } from '@pir/types';
 
-export type { Reading, DailySummary, ReadingStatus };
+export type { Reading, DailySummary, DayBlock, ReadingStatus };
 
 let _client: SupabaseClient | null = null;
 
@@ -47,6 +47,27 @@ export async function getReadingsForDay(dateStr: string): Promise<Reading[]> {
     .lt('ts', end)
     .order('ts', { ascending: true })
     .limit(20000);
+  if (error) throw error;
+  return (data ?? []) as Reading[];
+}
+
+export async function getDayBlocks(dateStr: string): Promise<DayBlock[]> {
+  const start = new Date(dateStr + 'T00:00:00').getTime();
+  const end   = start + 86_400_000;
+  const { data, error } = await getClient()
+    .rpc('get_day_blocks', { start_ts: start, end_ts: end });
+  if (error) throw error;
+  return (data ?? []) as DayBlock[];
+}
+
+export async function getReadingsWindow(fromTs: number, toTs: number): Promise<Reading[]> {
+  const { data, error } = await getClient()
+    .from('readings')
+    .select('*')
+    .gte('ts', fromTs)
+    .lt('ts', toTs)
+    .order('ts', { ascending: true })
+    .limit(700);
   if (error) throw error;
   return (data ?? []) as Reading[];
 }

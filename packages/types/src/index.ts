@@ -14,6 +14,12 @@ export interface DailySummary {
   reading_count: number;
 }
 
+export interface DayBlock {
+  bucket_start: number;   // Unix ms — start of 10-min bucket
+  high_db: number | null;
+  reading_count: number;
+}
+
 export interface WsMessage {
   ts: number;
   raw_db: number | null;
