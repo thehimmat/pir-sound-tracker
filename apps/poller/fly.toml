@@ -1,0 +1,21 @@
+app = "pir-sound-tracker-poller"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  MOCK_MODE  = "false"
+  CROP_X     = "0"
+  CROP_Y     = "46"
+  CROP_W     = "100"
+  CROP_H     = "34"
+  TESSDATA_DIR = "/app/tessdata"
+
+# No HTTP services — this is a pure background worker
+# Secrets (IMAGE_URL, SUPABASE_URL, SUPABASE_ANON_KEY) set via: fly secrets set
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
