@@ -2,40 +2,56 @@ import React, { useState } from 'react';
 import { LiveView } from './components/LiveView.js';
 import { TodayView } from './components/TodayView.js';
 import { HistoryView } from './components/HistoryView.js';
+import { AboutView } from './components/AboutView.js';
 
-type Tab = 'live' | 'today' | 'history';
+type Tab = 'live' | 'today' | 'history' | 'about';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'live',    label: 'Live' },
   { id: 'today',   label: 'Today' },
   { id: 'history', label: 'History' },
+  { id: 'about',   label: 'About' },
 ];
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('live');
 
   return (
-    <div>
-      <header style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0', marginBottom: 16 }}>
-          Portland International Raceway — Noise Monitor
-        </h1>
-        <nav style={{ display: 'flex', gap: 4 }}>
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={tabStyle(tab === t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-      </header>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div style={{ flex: 1 }}>
+        <header style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0', marginBottom: 16 }}>
+            Portland International Raceway — Noise Monitor
+          </h1>
+          <nav style={{ display: 'flex', gap: 4 }}>
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                style={tabStyle(tab === t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        </header>
 
-      {tab === 'live'    && <LiveView />}
-      {tab === 'today'   && <TodayView />}
-      {tab === 'history' && <HistoryView />}
+        {tab === 'live'    && <LiveView />}
+        {tab === 'today'   && <TodayView />}
+        {tab === 'history' && <HistoryView />}
+        {tab === 'about'   && <AboutView />}
+      </div>
+
+      <footer style={footerStyle}>
+        © {new Date().getFullYear()}{' '}
+        <a href="https://github.com/thehimmat" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+          Himmat Singh Khalsa
+        </a>
+        {' · '}
+        <button onClick={() => setTab('about')} style={footerLinkBtn}>
+          About this project
+        </button>
+      </footer>
     </div>
   );
 }
@@ -53,3 +69,28 @@ function tabStyle(active: boolean): React.CSSProperties {
     transition: 'background 0.15s',
   };
 }
+
+const footerStyle: React.CSSProperties = {
+  marginTop: 48,
+  paddingTop: 16,
+  borderTop: '1px solid #1e293b',
+  fontSize: 12,
+  color: '#475569',
+  display: 'flex',
+  gap: 4,
+  alignItems: 'center',
+};
+
+const linkStyle: React.CSSProperties = {
+  color: '#475569',
+  textDecoration: 'none',
+};
+
+const footerLinkBtn: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  color: '#475569',
+  fontSize: 12,
+  cursor: 'pointer',
+  padding: 0,
+};
