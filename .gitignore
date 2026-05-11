@@ -8,3 +8,6 @@ data/
 
 # Tesseract model — downloaded at runtime by tesseract.js
 *.traineddata
+
+# TypeScript incremental build info
+*.tsbuildinfo

@@ -13,14 +13,13 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "node --test dist/index.test.js"
+    "dev": "tsc --watch"
   },
   "dependencies": {
-    "@pir/types": "*"
+    "@pir/types": "*",
+    "@supabase/supabase-js": "^2.43.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
     "typescript": "^5.4.0"
   }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import type { Reading, WsMessage } from '@pir/types';
-import { useWebSocket } from '../hooks/useWebSocket.js';
+import { useRealtimeReadings } from '../hooks/useRealtimeReadings.js';
 import { useApi } from '../hooks/useApi.js';
 import { DbDisplay } from './DbDisplay.js';
 import { ReadingsChart } from './ReadingsChart.js';
@@ -16,30 +16,23 @@ export function LiveView() {
 
   const { data: hourReadings } = useApi<Reading[]>('/api/readings/hour');
 
-  const connected = useWebSocket(useCallback((msg: WsMessage) => {
+  const connected = useRealtimeReadings(useCallback((msg: WsMessage) => {
     setLatest(msg);
-
     setLiveReadings(prev => {
       const cutoff = Date.now() - 60 * 60 * 1000;
-      const next = [...prev, msg as unknown as Reading].filter(r => r.ts >= cutoff);
-      return next;
+      return [...prev, msg as unknown as Reading].filter(r => r.ts >= cutoff);
     });
-
-    const isOk = msg.status === 'ok';
-    if (isOk) {
-      if (offlineTimer.current) clearTimeout(offlineTimer.current);
+    if (msg.status === 'ok') {
+      if (offlineTimer.current) { clearTimeout(offlineTimer.current); offlineTimer.current = null; }
       setFeedOffline(false);
-    } else {
-      if (!offlineTimer.current) {
-        offlineTimer.current = setTimeout(() => {
-          setFeedOffline(true);
-          offlineTimer.current = null;
-        }, OFFLINE_THRESHOLD_MS);
-      }
+    } else if (!offlineTimer.current) {
+      offlineTimer.current = setTimeout(() => {
+        setFeedOffline(true);
+        offlineTimer.current = null;
+      }, OFFLINE_THRESHOLD_MS);
     }
   }, []));
 
-  // Merge historical + live readings
   const allReadings: Reading[] = [
     ...(hourReadings ?? []),
     ...liveReadings,
@@ -49,7 +42,7 @@ export function LiveView() {
   return (
     <div>
       {!connected && (
-        <div style={bannerStyle('#7c3aed')}>Connecting to WebSocket…</div>
+        <div style={bannerStyle('#7c3aed')}>Connecting to live feed…</div>
       )}
       {feedOffline && (
         <div style={bannerStyle('#b91c1c')}>Feed offline — meter not reporting</div>
@@ -63,12 +56,7 @@ export function LiveView() {
 
 function bannerStyle(bg: string): React.CSSProperties {
   return {
-    background: bg,
-    color: '#fff',
-    padding: '8px 16px',
-    borderRadius: 6,
-    marginBottom: 12,
-    fontSize: 13,
-    textAlign: 'center',
+    background: bg, color: '#fff', padding: '8px 16px',
+    borderRadius: 6, marginBottom: 12, fontSize: 13, textAlign: 'center',
   };
 }

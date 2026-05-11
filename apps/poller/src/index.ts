@@ -1,4 +1,10 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+loadEnv({ path: resolve(__dirname, '../../../.env') });
+
 import { config } from './config.js';
 import { avgBrightness, preprocessImage } from './preprocess.js';
 import { ocrImage, terminateOcr } from './ocr.js';
@@ -6,11 +12,8 @@ import { parseDbReading } from './parser.js';
 import { simpleHash } from './imageHash.js';
 import { nextMockReading } from './mock.js';
 import { broadcast, startWsServer } from './wsServer.js';
-import { getDb, insertReading } from '@pir/db';
+import { insertReading } from '@pir/db';
 import type { ReadingStatus, WsMessage } from '@pir/types';
-
-// Ensure DB is open before polling starts
-getDb(config.dbPath);
 
 startWsServer(config.wsPort);
 
@@ -40,7 +43,7 @@ async function poll(): Promise<void> {
         imgBuf = await fetchImageBuffer();
       } catch {
         status = 'error';
-        write(ts, null, status);
+        await write(ts, null, status);
         return;
       }
 
@@ -48,7 +51,7 @@ async function poll(): Promise<void> {
       const brightness = await avgBrightness(imgBuf);
       if (brightness > 240) {
         status = 'blank';
-        write(ts, null, status);
+        await write(ts, null, status);
         return;
       }
 
@@ -58,7 +61,7 @@ async function poll(): Promise<void> {
         if (staleFirstTs === null) staleFirstTs = ts;
         if (ts - staleFirstTs > config.staleAfterMs) {
           status = 'stale';
-          write(ts, null, status);
+          await write(ts, null, status);
           return;
         }
       } else {
@@ -85,11 +88,11 @@ async function poll(): Promise<void> {
     status = 'error';
   }
 
-  write(ts, raw_db, status);
+  await write(ts, raw_db, status);
 }
 
-function write(ts: number, raw_db: number | null, status: ReadingStatus): void {
-  insertReading(ts, raw_db, status);
+async function write(ts: number, raw_db: number | null, status: ReadingStatus): Promise<void> {
+  await insertReading(ts, raw_db, status);
   const msg: WsMessage = { ts, raw_db, status };
   broadcast(msg);
   if (status !== 'ok') {
@@ -99,7 +102,6 @@ function write(ts: number, raw_db: number | null, status: ReadingStatus): void {
   }
 }
 
-// Poll loop — fire immediately, then every POLL_MS
 async function run(): Promise<void> {
   console.log(`[poller] starting — mock=${config.mockMode} poll=${config.pollMs}ms`);
   await poll();

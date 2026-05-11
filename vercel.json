@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build --workspace=packages/types && npm run build --workspace=packages/db && npm run build --workspace=apps/web",
+  "outputDirectory": "apps/web/dist",
+  "installCommand": "npm install",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ]
+}
