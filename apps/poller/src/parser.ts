@@ -1,4 +1,4 @@
-const DB_MIN = 40.0;
+const DB_MIN = 20.0;
 const DB_MAX = 150.0;
 
 /**
