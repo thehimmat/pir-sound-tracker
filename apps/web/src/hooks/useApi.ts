@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3002';
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 export function useApi<T>(path: string, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null);

@@ -5,7 +5,7 @@ import { HistoryChart } from './HistoryChart.js';
 import { ReadingsChart } from './ReadingsChart.js';
 import { SummaryBar } from './SummaryBar.js';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3002';
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 export function HistoryView() {
   const { data: summaries, loading } = useApi<DailySummary[]>('/api/summary/history');
