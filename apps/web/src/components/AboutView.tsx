@@ -17,8 +17,15 @@ export function AboutView() {
       <h3 style={h3}>How it works</h3>
       <p>
         The raceway operates a sound level meter with a fixed microphone positioned
-        50 feet from the track. The current reading is published on the raceway's
-        website. Every second, a server automatically captures a snapshot of that
+        50 feet from the track. The current reading is published on the{' '}
+        <a
+          href="http://portlandraceway.com/?/about/noise_information"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#3b82f6', textDecoration: 'none' }}
+        >
+          raceway's website
+        </a>. Every second, a server automatically captures a snapshot of that
         display and uses{' '}
         <strong style={{ color: '#e2e8f0' }}>optical character recognition (OCR)</strong>{' '}
         — the same technology used to read text in photos — to extract the numerical
