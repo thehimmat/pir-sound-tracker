@@ -7,5 +7,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(400).json({ error: 'date must be YYYY-MM-DD' });
     return;
   }
-  res.json(await getDayBlocks(date));
+  const from = parseInt(req.query['from'] as string, 10);
+  const to   = parseInt(req.query['to']   as string, 10);
+  if (isNaN(from) || isNaN(to)) {
+    res.status(400).json({ error: 'from and to (epoch ms) are required' });
+    return;
+  }
+  res.json(await getDayBlocks(from, to));
 }

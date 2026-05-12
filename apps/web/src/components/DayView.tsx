@@ -16,6 +16,11 @@ function snapToBucket(ts: number): number {
   return Math.floor(ts / TEN_MIN) * TEN_MIN;
 }
 
+function localDayBounds(dateStr: string): [number, number] {
+  const start = new Date(dateStr + 'T00:00:00').getTime(); // local midnight in browser
+  return [start, start + 86_400_000];
+}
+
 function parseTimeInput(dateStr: string, timeStr: string): number | null {
   const m = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (!m) return null;
@@ -39,7 +44,8 @@ export function DayView({ date }: Props) {
   const isToday = date === new Date().toLocaleDateString('sv');
 
   function loadBlocks() {
-    fetch(`${API_URL}/api/readings/blocks/${date}`)
+    const [from, to] = localDayBounds(date);
+    fetch(`${API_URL}/api/readings/blocks/${date}?from=${from}&to=${to}`)
       .then(r => r.json())
       .then((d: DayBlock[]) => { setBlocks(d); setBlocksLoading(false); })
       .catch(() => setBlocksLoading(false));

@@ -51,11 +51,9 @@ export async function getReadingsForDay(dateStr: string): Promise<Reading[]> {
   return (data ?? []) as Reading[];
 }
 
-export async function getDayBlocks(dateStr: string): Promise<DayBlock[]> {
-  const start = new Date(dateStr + 'T00:00:00').getTime();
-  const end   = start + 86_400_000;
+export async function getDayBlocks(startTs: number, endTs: number): Promise<DayBlock[]> {
   const { data, error } = await getClient()
-    .rpc('get_day_blocks', { start_ts: start, end_ts: end });
+    .rpc('get_day_blocks', { start_ts: startTs, end_ts: endTs });
   if (error) throw error;
   return (data ?? []) as DayBlock[];
 }
