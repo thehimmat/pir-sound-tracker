@@ -15,9 +15,9 @@ export function LiveView() {
   const offlineTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [feedOffline, setFeedOffline] = useState(false);
 
-  const { data: hourReadings } = useApi<Reading[]>('/api/readings/hour');
+  const { data: hourReadings, loading: historyLoading } = useApi<Reading[]>('/api/readings/hour');
 
-  const connected = useRealtimeReadings(useCallback((msg: WsMessage) => {
+  useRealtimeReadings(useCallback((msg: WsMessage) => {
     setLatest(msg);
     setLiveReadings(prev => {
       const cutoff = Date.now() - 10 * 60 * 1000;
@@ -47,9 +47,6 @@ export function LiveView() {
 
   return (
     <div>
-      {!connected && (
-        <div style={bannerStyle('#7c3aed')}>Connecting to live feed…</div>
-      )}
       {feedOffline && (
         <div style={bannerStyle('#b91c1c')}>Feed offline — meter not reporting</div>
       )}
@@ -78,7 +75,11 @@ export function LiveView() {
       )}
       <DbDisplay value={latest?.raw_db ?? null} status={latest?.status ?? null} limitDb={limitDb} />
       <SummaryBar readings={allReadings} limitDb={limitDb} />
-      <ReadingsChart readings={allReadings} tickIntervalMs={60_000} limitDb={limitDb} />
+      {historyLoading ? (
+        <ChartPlaceholder />
+      ) : (
+        <ReadingsChart readings={allReadings} tickIntervalMs={60_000} limitDb={limitDb} />
+      )}
     </div>
   );
 }
@@ -88,4 +89,34 @@ function bannerStyle(bg: string): React.CSSProperties {
     background: bg, color: '#fff', padding: '8px 16px',
     borderRadius: 6, marginBottom: 12, fontSize: 13, textAlign: 'center',
   };
+}
+
+function ChartPlaceholder() {
+  return (
+    <div style={{
+      height: 260,
+      borderRadius: 8,
+      background: '#0f1117',
+      border: '1px solid #1e293b',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 16,
+      overflow: 'hidden',
+      position: 'relative',
+    }}>
+      {/* animated sweep bar */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(90deg, transparent 0%, #22c55e18 50%, transparent 100%)',
+        animation: 'chart-sweep 2.4s ease-in-out infinite',
+        transformOrigin: 'left center',
+      }} />
+      <div style={{ fontSize: 13, color: '#475569', zIndex: 1 }}>
+        Loading last 10 minutes…
+      </div>
+    </div>
+  );
 }

@@ -24,9 +24,18 @@ export function DbDisplay({ value, status, limitDb = 103 }: Props) {
   const color = dbColor(value, limitDb);
   const label = status && status !== 'ok' ? STATUS_LABELS[status] ?? status.toUpperCase() : null;
 
+  const waiting = value === null && status === null;
+
   return (
     <div style={{ textAlign: 'center', padding: '24px 0' }}>
-      <div style={{ fontSize: 96, fontWeight: 700, color, lineHeight: 1, letterSpacing: '-2px' }}>
+      <div style={{
+        fontSize: 96,
+        fontWeight: 700,
+        color,
+        lineHeight: 1,
+        letterSpacing: '-2px',
+        animation: waiting ? 'fade-pulse 2s ease-in-out infinite' : undefined,
+      }}>
         {value !== null ? value.toFixed(1) : '--'}
       </div>
       <div style={{ fontSize: 28, color: '#94a3b8', marginTop: 4 }}>dB</div>
