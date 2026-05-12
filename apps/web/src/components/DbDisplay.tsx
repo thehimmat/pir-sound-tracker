@@ -1,4 +1,3 @@
-import React from 'react';
 import type { ReadingStatus } from '@pir/types';
 
 interface Props {
@@ -30,20 +29,19 @@ export function DbDisplay({ value, status }: Props) {
         {value !== null ? value.toFixed(1) : '--'}
       </div>
       <div style={{ fontSize: 28, color: '#94a3b8', marginTop: 4 }}>dB</div>
-      {label && (
-        <span style={{
-          display: 'inline-block',
-          marginTop: 12,
-          padding: '4px 14px',
-          borderRadius: 6,
-          background: '#1e293b',
-          color: '#f59e0b',
-          fontSize: 13,
-          letterSpacing: 1,
-        }}>
-          {label}
-        </span>
-      )}
+      <span style={{
+        display: 'inline-block',
+        marginTop: 12,
+        padding: '4px 14px',
+        borderRadius: 6,
+        background: '#1e293b',
+        color: '#f59e0b',
+        fontSize: 13,
+        letterSpacing: 1,
+        visibility: label ? 'visible' : 'hidden',
+      }}>
+        {label ?? 'OK'}
+      </span>
     </div>
   );
 }
