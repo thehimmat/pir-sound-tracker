@@ -55,10 +55,69 @@ export function AboutView() {
         <strong style={{ color: '#e2e8f0' }}>103 dBA</strong> — sound engineers
         determined this more accurately corresponds to 65 dB at the nearest
         residence. Vehicles exceeding 103 dBA are subject to removal from
-        competition. The facility also permits up to four variance events per year
-        at higher limits (110–115 dB). The red dashed line on charts marks the
+        competition. The red dashed line on charts marks the
         103 dBA operational limit; readings at or above that level are highlighted
         in red.
+      </p>
+
+      <h3 style={h3}>2026 variance events</h3>
+      <p>
+        The facility is permitted up to four variance events per year at higher limits.
+        The following events have been approved for 2026:
+      </p>
+      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13, marginBottom: 8 }}>
+        <thead>
+          <tr>
+            <th style={th}>Event</th>
+            <th style={th}>Dates</th>
+            <th style={th}>Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={td}>NTT IndyCar Series</td>
+            <td style={td}>Aug 13–16 (+ 2 TBD test days)</td>
+            <td style={{ ...td, color: '#ef4444', fontWeight: 600 }}>115 dB</td>
+          </tr>
+          <tr>
+            <td style={td}>Rose Cup Races</td>
+            <td style={td}>Jul 10–12</td>
+            <td style={{ ...td, color: '#f59e0b', fontWeight: 600 }}>112 dB</td>
+          </tr>
+          <tr>
+            <td style={td}>Sovren / ABFM</td>
+            <td style={td}>Sep 4–6</td>
+            <td style={{ ...td, color: '#f59e0b', fontWeight: 600 }}>110 dB</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style={{ fontSize: 12, color: '#475569' }}>
+        During variance events the red threshold line on charts still marks 103 dBA — the
+        standard operational limit — for reference.
+      </p>
+
+      <h3 style={h3}>Official noise records</h3>
+      <p>
+        All noise recordings captured by the raceway's sound level meter are held on file
+        and provided to the City of Portland's{' '}
+        <strong style={{ color: '#e2e8f0' }}>Noise Control Officer</strong> on request.
+        The Noise Control Officer is the official custodian of this data for regulatory
+        and enforcement purposes.
+      </p>
+
+      <h3 style={h3}>Filing a noise complaint</h3>
+      <p>
+        Residents can report a noise concern directly through Portland's online form:
+      </p>
+      <p>
+        <a
+          href="https://www.portland.gov/oni/noise-complaints"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#3b82f6', textDecoration: 'none' }}
+        >
+          Report a noise concern — Portland.gov
+        </a>
       </p>
 
       <h3 style={h3}>Data retention</h3>
@@ -93,6 +152,23 @@ export function AboutView() {
     </div>
   );
 }
+
+const th: React.CSSProperties = {
+  textAlign: 'left',
+  padding: '6px 12px',
+  borderBottom: '1px solid #334155',
+  color: '#64748b',
+  fontWeight: 500,
+  fontSize: 12,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+};
+
+const td: React.CSSProperties = {
+  padding: '6px 12px',
+  borderBottom: '1px solid #1e293b',
+  color: '#cbd5e1',
+};
 
 const h3: React.CSSProperties = {
   fontSize: 13,
