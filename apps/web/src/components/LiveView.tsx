@@ -5,6 +5,7 @@ import { useApi } from '../hooks/useApi.js';
 import { DbDisplay } from './DbDisplay.js';
 import { ReadingsChart } from './ReadingsChart.js';
 import { SummaryBar } from './SummaryBar.js';
+import { getLimitForDate, getEventForDate } from '../utils/varianceEvents.js';
 
 const OFFLINE_THRESHOLD_MS = 10_000;
 
@@ -33,6 +34,10 @@ export function LiveView() {
     }
   }, []));
 
+  const today = new Date().toLocaleDateString('sv');
+  const limitDb = getLimitForDate(today);
+  const varianceEvent = getEventForDate(today);
+
   const cutoff = Date.now() - 10 * 60 * 1000;
   const allReadings: Reading[] = [
     ...(hourReadings ?? []),
@@ -48,9 +53,32 @@ export function LiveView() {
       {feedOffline && (
         <div style={bannerStyle('#b91c1c')}>Feed offline — meter not reporting</div>
       )}
-      <DbDisplay value={latest?.raw_db ?? null} status={latest?.status ?? null} />
-      <SummaryBar readings={allReadings} />
-      <ReadingsChart readings={allReadings} tickIntervalMs={60_000} />
+      {varianceEvent && (
+        <div style={{
+          background: '#7c2d12',
+          border: '1px solid #ef4444',
+          borderRadius: 8,
+          padding: '10px 16px',
+          marginBottom: 12,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 13,
+          color: '#fca5a5',
+        }}>
+          <span style={{ fontSize: 16 }}>⚠</span>
+          <span>
+            <strong style={{ color: '#fef2f2' }}>Variance event day — {varianceEvent.name}</strong>
+            {varianceEvent.note && <span style={{ color: '#f87171' }}> ({varianceEvent.note})</span>}
+            <span style={{ marginLeft: 8 }}>
+              · Permitted limit today: <strong style={{ color: '#fef2f2' }}>{varianceEvent.limitDb} dBA</strong>
+            </span>
+          </span>
+        </div>
+      )}
+      <DbDisplay value={latest?.raw_db ?? null} status={latest?.status ?? null} limitDb={limitDb} />
+      <SummaryBar readings={allReadings} limitDb={limitDb} />
+      <ReadingsChart readings={allReadings} tickIntervalMs={60_000} limitDb={limitDb} />
     </div>
   );
 }

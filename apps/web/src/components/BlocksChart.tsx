@@ -15,13 +15,14 @@ interface Props {
   blocks: DayBlock[];
   selectedBucket: number | null;
   onBlockClick: (bucketStart: number) => void;
+  limitDb?: number;
 }
 
 function fmtBucket(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export function BlocksChart({ blocks, selectedBucket, onBlockClick }: Props) {
+export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 103 }: Props) {
   if (blocks.length === 0) {
     return <div style={{ color: '#64748b', textAlign: 'center', padding: 40 }}>No data for this day.</div>;
   }
@@ -63,7 +64,7 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick }: Props) {
           }
           cursor={{ fill: '#ffffff08' }}
         />
-        <ReferenceLine y={103} stroke="#ef4444" strokeDasharray="6 3" />
+        <ReferenceLine y={limitDb} stroke="#ef4444" strokeDasharray="6 3" label={{ value: `${limitDb} dB`, fill: '#ef4444', fontSize: 10, position: 'insideTopRight' }} />
         <Bar dataKey="high_db" maxBarSize={4} radius={[1, 1, 0, 0]} isAnimationActive={false} style={{ cursor: 'pointer' }}>
           {blocks.map(b => (
             <Cell
@@ -73,7 +74,7 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick }: Props) {
                   ? '#1e293b'
                   : b.bucket_start === selectedBucket
                     ? '#3b82f6'
-                    : b.high_db >= 103
+                    : b.high_db >= limitDb
                       ? '#ef4444'
                       : '#22c55e'
               }

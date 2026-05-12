@@ -75,14 +75,14 @@ export function AboutView() {
         </thead>
         <tbody>
           <tr>
-            <td style={td}>NTT IndyCar Series</td>
-            <td style={td}>Aug 13–16 (+ 2 TBD test days)</td>
-            <td style={{ ...td, color: '#ef4444', fontWeight: 600 }}>115 dB</td>
-          </tr>
-          <tr>
             <td style={td}>Rose Cup Races</td>
             <td style={td}>Jul 10–12</td>
             <td style={{ ...td, color: '#f59e0b', fontWeight: 600 }}>112 dB</td>
+          </tr>
+          <tr>
+            <td style={td}>NTT IndyCar Series</td>
+            <td style={td}>Aug 13–16 (+ 2 TBD test days)</td>
+            <td style={{ ...td, color: '#ef4444', fontWeight: 600 }}>115 dB</td>
           </tr>
           <tr>
             <td style={td}>Sovren / ABFM</td>
@@ -92,8 +92,9 @@ export function AboutView() {
         </tbody>
       </table>
       <p style={{ fontSize: 12, color: '#475569' }}>
-        During variance events the red threshold line on charts still marks 103 dBA — the
-        standard operational limit — for reference.
+        On variance event days the threshold line on charts automatically adjusts to
+        the permitted limit for that event. A banner is shown on the Live and Today views
+        when an event is active.
       </p>
 
       <h3 style={h3}>Official noise records</h3>

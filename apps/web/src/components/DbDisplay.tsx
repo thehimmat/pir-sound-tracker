@@ -3,12 +3,13 @@ import type { ReadingStatus } from '@pir/types';
 interface Props {
   value: number | null;
   status: ReadingStatus | null;
+  limitDb?: number;
 }
 
-function dbColor(value: number | null): string {
+function dbColor(value: number | null, limitDb: number): string {
   if (value === null) return '#94a3b8';
-  if (value >= 103) return '#ef4444';
-  if (value >= 90)  return '#f59e0b';
+  if (value >= limitDb) return '#ef4444';
+  if (value >= limitDb - 13) return '#f59e0b'; // amber within ~13 dB of limit
   return '#22c55e';
 }
 
@@ -19,8 +20,8 @@ const STATUS_LABELS: Record<string, string> = {
   ocr_fail: 'OCR FAIL',
 };
 
-export function DbDisplay({ value, status }: Props) {
-  const color = dbColor(value);
+export function DbDisplay({ value, status, limitDb = 103 }: Props) {
+  const color = dbColor(value, limitDb);
   const label = status && status !== 'ok' ? STATUS_LABELS[status] ?? status.toUpperCase() : null;
 
   return (

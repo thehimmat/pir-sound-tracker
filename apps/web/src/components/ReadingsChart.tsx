@@ -13,6 +13,7 @@ import type { Reading } from '@pir/types';
 interface Props {
   readings: Reading[];
   tickIntervalMs?: number;
+  limitDb?: number;
 }
 
 const TEN_MIN = 10 * 60 * 1000;
@@ -31,7 +32,7 @@ function computeTicks(data: { ts: number }[], intervalMs: number): number[] {
   return ticks;
 }
 
-export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN }: Props) {
+export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN, limitDb = 103 }: Props) {
   const data = readings
     .filter(r => r.status === 'ok' && r.raw_db !== null)
     .map(r => ({ ts: r.ts, db: r.raw_db as number }));
@@ -64,7 +65,7 @@ export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN }: Props) {
           labelFormatter={(ts: number) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           formatter={(v: number) => [`${v.toFixed(1)} dB`, 'Level']}
         />
-        <ReferenceLine y={103} stroke="#ef4444" strokeDasharray="6 3" label={{ value: '103 dB', fill: '#ef4444', fontSize: 11 }} />
+        <ReferenceLine y={limitDb} stroke="#ef4444" strokeDasharray="6 3" label={{ value: `${limitDb} dB`, fill: '#ef4444', fontSize: 11 }} />
         <Line
           type="monotone"
           dataKey="db"

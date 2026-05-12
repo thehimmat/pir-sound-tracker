@@ -3,6 +3,7 @@ import type { DayBlock, Reading } from '@pir/types';
 import { BlocksChart } from './BlocksChart.js';
 import { ReadingsChart } from './ReadingsChart.js';
 import { SummaryBar } from './SummaryBar.js';
+import { getLimitForDate, getEventForDate } from '../utils/varianceEvents.js';
 
 const TEN_MIN       = 10 * 60 * 1000;
 const REFRESH_MS    = 2 * 60 * 1000; // re-fetch blocks every 2 min when viewing today
@@ -54,6 +55,8 @@ export function DayView({ date }: Props) {
   const [timeError, setTimeError]     = useState('');
 
   const isToday = date === new Date().toLocaleDateString('sv');
+  const limitDb = getLimitForDate(date);
+  const varianceEvent = getEventForDate(date);
 
   function loadBlocks() {
     const [from, to] = localDayBounds(date);
@@ -107,10 +110,33 @@ export function DayView({ date }: Props) {
 
   return (
     <div>
+      {varianceEvent && (
+        <div style={{
+          background: '#7c2d12',
+          border: '1px solid #ef4444',
+          borderRadius: 8,
+          padding: '10px 16px',
+          marginBottom: 14,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 13,
+          color: '#fca5a5',
+        }}>
+          <span style={{ fontSize: 16 }}>⚠</span>
+          <span>
+            <strong style={{ color: '#fef2f2' }}>Variance event day — {varianceEvent.name}</strong>
+            {varianceEvent.note && <span style={{ color: '#f87171' }}> ({varianceEvent.note})</span>}
+            <span style={{ marginLeft: 8, color: '#fca5a5' }}>
+              · Permitted limit: <strong style={{ color: '#fef2f2' }}>{varianceEvent.limitDb} dBA</strong>
+            </span>
+          </span>
+        </div>
+      )}
       <div style={{ fontSize: 12, color: '#64748b', marginBottom: 6 }}>
         Peak dB per 10-min block — click a bar to inspect
       </div>
-      <BlocksChart blocks={blocks} selectedBucket={selectedBucket} onBlockClick={fetchWindow} />
+      <BlocksChart blocks={blocks} selectedBucket={selectedBucket} onBlockClick={fetchWindow} limitDb={limitDb} />
 
       {selectedBucket !== null && (
         <div style={{ marginTop: 20 }}>
@@ -137,8 +163,8 @@ export function DayView({ date }: Props) {
             <div style={{ color: '#64748b', textAlign: 'center', padding: 24 }}>Loading…</div>
           ) : (
             <>
-              <SummaryBar readings={windowReadings} />
-              <ReadingsChart readings={windowReadings} tickIntervalMs={60_000} />
+              <SummaryBar readings={windowReadings} limitDb={limitDb} />
+              <ReadingsChart readings={windowReadings} tickIntervalMs={60_000} limitDb={limitDb} />
             </>
           )}
         </div>
