@@ -4,7 +4,8 @@ import { BlocksChart } from './BlocksChart.js';
 import { ReadingsChart } from './ReadingsChart.js';
 import { SummaryBar } from './SummaryBar.js';
 
-const TEN_MIN = 10 * 60 * 1000;
+const TEN_MIN       = 10 * 60 * 1000;
+const REFRESH_MS    = 2 * 60 * 1000; // re-fetch blocks every 2 min when viewing today
 const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 interface Props {
@@ -35,15 +36,25 @@ export function DayView({ date }: Props) {
   const [timeInput, setTimeInput]     = useState('');
   const [timeError, setTimeError]     = useState('');
 
-  useEffect(() => {
-    setBlocksLoading(true);
-    setSelectedBucket(null);
-    setWindowReadings([]);
+  const isToday = date === new Date().toLocaleDateString('sv');
+
+  function loadBlocks() {
     fetch(`${API_URL}/api/readings/blocks/${date}`)
       .then(r => r.json())
       .then((d: DayBlock[]) => { setBlocks(d); setBlocksLoading(false); })
       .catch(() => setBlocksLoading(false));
-  }, [date]);
+  }
+
+  useEffect(() => {
+    setBlocksLoading(true);
+    setSelectedBucket(null);
+    setWindowReadings([]);
+    loadBlocks();
+
+    if (!isToday) return;
+    const id = setInterval(loadBlocks, REFRESH_MS);
+    return () => clearInterval(id);
+  }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function fetchWindow(bucketStart: number) {
     setSelectedBucket(bucketStart);
