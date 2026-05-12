@@ -21,6 +21,18 @@ function localDayBounds(dateStr: string): [number, number] {
   return [start, start + 86_400_000];
 }
 
+/** Fill every 10-min slot from day start to now (or day end) with null where data is absent. */
+function fillGaps(blocks: DayBlock[], dateStr: string): DayBlock[] {
+  const [dayStart, dayEnd] = localDayBounds(dateStr);
+  const ceiling = Math.min(dayEnd, Date.now());
+  const byStart = new Map(blocks.map(b => [b.bucket_start, b]));
+  const filled: DayBlock[] = [];
+  for (let t = dayStart; t < ceiling; t += TEN_MIN) {
+    filled.push(byStart.get(t) ?? { bucket_start: t, high_db: null, reading_count: 0 });
+  }
+  return filled;
+}
+
 function parseTimeInput(dateStr: string, timeStr: string): number | null {
   const m = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (!m) return null;
@@ -47,7 +59,7 @@ export function DayView({ date }: Props) {
     const [from, to] = localDayBounds(date);
     fetch(`${API_URL}/api/readings/blocks/${date}?from=${from}&to=${to}`)
       .then(r => r.json())
-      .then((d: DayBlock[]) => { setBlocks(d); setBlocksLoading(false); })
+      .then((d: DayBlock[]) => { setBlocks(fillGaps(d, date)); setBlocksLoading(false); })
       .catch(() => setBlocksLoading(false));
   }
 

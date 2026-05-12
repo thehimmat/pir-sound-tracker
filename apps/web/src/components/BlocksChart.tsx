@@ -32,7 +32,10 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick }: Props) {
         data={blocks}
         margin={{ top: 8, right: 20, bottom: 0, left: 0 }}
         barCategoryGap="20%"
-        onClick={(e) => { if (e?.activePayload?.[0]) onBlockClick((e.activePayload[0].payload as DayBlock).bucket_start); }}
+        onClick={(e) => {
+          const b = e?.activePayload?.[0]?.payload as DayBlock | undefined;
+          if (b && b.high_db !== null) onBlockClick(b.bucket_start);
+        }}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
         <XAxis
@@ -52,7 +55,12 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick }: Props) {
           labelStyle={{ color: '#94a3b8', fontSize: 11 }}
           itemStyle={{ color: '#22c55e' }}
           labelFormatter={(ts: number) => fmtBucket(ts) + '–' + fmtBucket(ts + 600_000)}
-          formatter={(v: number) => [`${v.toFixed(1)} dB`, 'Peak']}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          formatter={(v: any) =>
+            v == null
+              ? [<span style={{ color: '#64748b', fontStyle: 'italic' }}>No data collected</span>, '']
+              : [`${(v as number).toFixed(1)} dB`, 'Peak']
+          }
           cursor={{ fill: '#ffffff08' }}
         />
         <ReferenceLine y={103} stroke="#ef4444" strokeDasharray="6 3" />
@@ -60,7 +68,15 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick }: Props) {
           {blocks.map(b => (
             <Cell
               key={b.bucket_start}
-              fill={b.bucket_start === selectedBucket ? '#3b82f6' : (b.high_db ?? 0) >= 103 ? '#ef4444' : '#22c55e'}
+              fill={
+                b.high_db === null
+                  ? '#1e293b'
+                  : b.bucket_start === selectedBucket
+                    ? '#3b82f6'
+                    : b.high_db >= 103
+                      ? '#ef4444'
+                      : '#22c55e'
+              }
             />
           ))}
         </Bar>
