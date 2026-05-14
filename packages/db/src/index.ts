@@ -74,8 +74,8 @@ export async function getDailySummary(dateStr: string): Promise<DailySummary> {
   const { data, error } = await getClient()
     .rpc('get_daily_summary', { date_str: dateStr });
   if (error) throw error;
-  const row = (data as Array<{ high_db: number | null; violation_count: number; reading_count: number }>)[0]
-    ?? { high_db: null, violation_count: 0, reading_count: 0 };
+  const row = (data as Array<{ high_db: number | null; violation_count: number; reading_count: number; error_count: number }>)[0]
+    ?? { high_db: null, violation_count: 0, reading_count: 0, error_count: 0 };
   return { date: dateStr, ...row };
 }
 

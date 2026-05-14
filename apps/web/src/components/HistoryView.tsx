@@ -24,6 +24,7 @@ export function HistoryView() {
             <Th>High dB</Th>
             <Th>Violations</Th>
             <Th>Readings</Th>
+            <Th title="Seconds where the source display was unreachable or unreadable">Errors</Th>
           </tr>
         </thead>
         <tbody>
@@ -40,7 +41,13 @@ export function HistoryView() {
               <Td style={{ color: s.violation_count > 0 ? '#ef4444' : '#e2e8f0' }}>
                 {s.violation_count}
               </Td>
-              <Td>{s.reading_count}</Td>
+              <Td>{s.reading_count.toLocaleString()}</Td>
+              <Td
+                style={{ color: s.error_count > 0 ? '#f59e0b' : '#475569' }}
+                title={s.error_count > 0 ? `${s.error_count} seconds where the source display was unreachable or unreadable` : undefined}
+              >
+                {s.error_count > 0 ? s.error_count.toLocaleString() : '—'}
+              </Td>
             </tr>
           ))}
         </tbody>
@@ -62,17 +69,17 @@ const tableStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
-function Th({ children }: { children: React.ReactNode }) {
+function Th({ children, title }: { children: React.ReactNode; title?: string }) {
   return (
-    <th style={{ textAlign: 'left', padding: '8px 12px', color: '#64748b', borderBottom: '1px solid #1e293b' }}>
+    <th title={title} style={{ textAlign: 'left', padding: '8px 12px', color: '#64748b', borderBottom: '1px solid #1e293b', cursor: title ? 'help' : undefined }}>
       {children}
     </th>
   );
 }
 
-function Td({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function Td({ children, style, title }: { children: React.ReactNode; style?: React.CSSProperties; title?: string }) {
   return (
-    <td style={{ padding: '8px 12px', borderBottom: '1px solid #0f1117', ...style }}>
+    <td title={title} style={{ padding: '8px 12px', borderBottom: '1px solid #0f1117', ...style }}>
       {children}
     </td>
   );

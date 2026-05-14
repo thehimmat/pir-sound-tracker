@@ -12,6 +12,7 @@ export interface DailySummary {
   high_db: number | null;
   violation_count: number;
   reading_count: number;
+  error_count: number;
 }
 
 export interface DayBlock {
