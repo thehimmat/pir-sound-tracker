@@ -59,7 +59,7 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 10
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           formatter={(v: any) =>
             v == null
-              ? [<span style={{ color: '#64748b', fontStyle: 'italic' }}>No data collected</span>, '']
+              ? [<span style={{ color: '#64748b', fontStyle: 'italic' }}>No data collected during this period</span>, '']
               : [`${(v as number).toFixed(1)} dB`, 'Peak']
           }
           cursor={{ fill: '#ffffff08' }}

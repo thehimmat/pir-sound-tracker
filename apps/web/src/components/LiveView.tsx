@@ -171,7 +171,7 @@ function ChartPlaceholder({ timedOut, error, onRetry }: PlaceholderProps) {
         </>
       ) : (
         <div style={{ fontSize: 13, color: '#475569', zIndex: 1 }}>
-          Loading last 10 minutes…
+          Loading…
         </div>
       )}
     </div>
