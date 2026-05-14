@@ -14,6 +14,10 @@ interface Props {
   readings: Reading[];
   tickIntervalMs?: number;
   limitDb?: number;
+  /** Pin the x-axis to a fixed window (epoch ms). When provided, ticks are
+   *  computed from this range so labels are always spread even if data is sparse. */
+  domainStart?: number;
+  domainEnd?: number;
 }
 
 const TEN_MIN = 10 * 60 * 1000;
@@ -22,20 +26,21 @@ function fmt(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function computeTicks(data: { ts: number }[], intervalMs: number): number[] {
-  if (data.length === 0) return [];
-  const first = data[0].ts;
-  const last  = data[data.length - 1].ts;
-  const start = Math.ceil(first / intervalMs) * intervalMs;
+function computeTicks(intervalMs: number, start: number, end: number): number[] {
+  const first = Math.ceil(start / intervalMs) * intervalMs;
   const ticks: number[] = [];
-  for (let t = start; t <= last; t += intervalMs) ticks.push(t);
+  for (let t = first; t <= end; t += intervalMs) ticks.push(t);
   return ticks;
 }
 
-export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN, limitDb = 103 }: Props) {
+export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN, limitDb = 103, domainStart, domainEnd }: Props) {
   const data = readings
     .filter(r => r.status === 'ok' && r.raw_db !== null)
     .map(r => ({ ts: r.ts, db: r.raw_db as number }));
+
+  // Use explicit domain bounds if provided; fall back to data extent
+  const xMin = domainStart ?? (data.length > 0 ? data[0].ts : Date.now() - TEN_MIN);
+  const xMax = domainEnd   ?? (data.length > 0 ? data[data.length - 1].ts : Date.now());
 
   return (
     <>
@@ -46,8 +51,8 @@ export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN, limitDb = 10
           dataKey="ts"
           type="number"
           scale="time"
-          domain={['dataMin', 'dataMax']}
-          ticks={computeTicks(data, tickIntervalMs)}
+          domain={[xMin, xMax]}
+          ticks={computeTicks(tickIntervalMs, xMin, xMax)}
           tickFormatter={fmt}
           tick={{ fill: '#64748b', fontSize: 11 }}
           tickLine={false}
