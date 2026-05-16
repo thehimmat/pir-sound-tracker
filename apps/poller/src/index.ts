@@ -42,7 +42,9 @@ async function poll(): Promise<void> {
       let imgBuf: Buffer;
       try {
         imgBuf = await fetchImageBuffer();
-      } catch {
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[poller] fetch error: ${msg}`);
         status = 'error';
         await write(ts, null, status);
         return;
@@ -93,7 +95,12 @@ async function poll(): Promise<void> {
 }
 
 async function write(ts: number, raw_db: number | null, status: ReadingStatus): Promise<void> {
-  await insertReading(ts, raw_db, status);
+  try {
+    await insertReading(ts, raw_db, status);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[poller] supabase write error: ${msg}`);
+  }
   recordPoll(ts, status === 'ok');
   const msg: WsMessage = { ts, raw_db, status };
   broadcast(msg);
