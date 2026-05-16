@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import type { TooltipProps } from 'recharts';
 import type { DayBlock } from '@pir/types';
 
 interface Props {
@@ -22,15 +23,53 @@ function fmtBucket(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// Fully custom tooltip so we control rendering for both data and gap slots.
+// Recharts excludes null-value items from activePayload, so we read the block
+// directly from payload[0].payload instead of relying on the value.
+function BlockTooltip({ active, payload, label }: TooltipProps<number, string>) {
+  if (!active || !payload?.length) return null;
+  const block = payload[0]?.payload as DayBlock | undefined;
+  if (!block) return null;
+
+  const timeStr = fmtBucket(label as number) + '–' + fmtBucket((label as number) + 600_000);
+
+  return (
+    <div style={{
+      background: '#1e293b',
+      border: '1px solid #334155',
+      borderRadius: 6,
+      padding: '8px 12px',
+      fontSize: 12,
+      lineHeight: 1.5,
+    }}>
+      <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 4 }}>{timeStr}</div>
+      {block.high_db === null
+        ? <span style={{ color: '#64748b', fontStyle: 'italic' }}>No data collected</span>
+        : <span style={{ color: '#22c55e' }}>{block.high_db.toFixed(1)} dB peak</span>
+      }
+    </div>
+  );
+}
+
+// Augmented type so TypeScript knows about the ghost field we add below.
+type ChartBlock = DayBlock & { _ghost?: number };
+
 export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 103 }: Props) {
   if (blocks.length === 0) {
     return <div style={{ color: '#64748b', textAlign: 'center', padding: 40 }}>No data for this day.</div>;
   }
 
+  // Add a transparent full-height ghost bar on null slots so the cursor always
+  // has a hit-testable element to trigger the tooltip.
+  const chartData: ChartBlock[] = blocks.map(b => ({
+    ...b,
+    _ghost: b.high_db === null ? 130 : undefined,
+  }));
+
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart
-        data={blocks}
+        data={chartData}
         margin={{ top: 8, right: 20, bottom: 0, left: 0 }}
         barCategoryGap="20%"
         onClick={(e) => {
@@ -52,26 +91,22 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 10
         />
         <YAxis domain={[30, 130]} tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} width={36} />
         <Tooltip
-          contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 6 }}
-          labelStyle={{ color: '#94a3b8', fontSize: 11 }}
-          itemStyle={{ color: '#22c55e' }}
-          labelFormatter={(ts: number) => fmtBucket(ts) + '–' + fmtBucket(ts + 600_000)}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          formatter={(v: any) =>
-            v == null
-              ? [<span style={{ color: '#64748b', fontStyle: 'italic' }}>No data collected during this period</span>, '']
-              : [`${(v as number).toFixed(1)} dB`, 'Peak']
-          }
+          content={<BlockTooltip />}
           cursor={{ fill: '#ffffff08' }}
         />
         <ReferenceLine y={limitDb} stroke="#ef4444" strokeDasharray="6 3" label={{ value: `${limitDb} dB`, fill: '#ef4444', fontSize: 10, position: 'insideTopRight' }} />
+
+        {/* Ghost bar — transparent, full-height on null slots so they remain hoverable */}
+        <Bar dataKey="_ghost" maxBarSize={4} fill="rgba(0,0,0,0)" isAnimationActive={false} style={{ pointerEvents: 'none' }} />
+
+        {/* Real data bar */}
         <Bar dataKey="high_db" maxBarSize={4} radius={[1, 1, 0, 0]} isAnimationActive={false} style={{ cursor: 'pointer' }}>
           {blocks.map(b => (
             <Cell
               key={b.bucket_start}
               fill={
                 b.high_db === null
-                  ? '#1e293b'
+                  ? 'transparent'
                   : b.bucket_start === selectedBucket
                     ? '#3b82f6'
                     : b.high_db >= limitDb
