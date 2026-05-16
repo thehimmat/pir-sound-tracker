@@ -12,6 +12,7 @@ import { parseDbReading } from './parser.js';
 import { simpleHash } from './imageHash.js';
 import { nextMockReading } from './mock.js';
 import { broadcast, startWsServer } from './wsServer.js';
+import { startHealthServer, recordPoll } from './healthServer.js';
 import { insertReading } from '@pir/db';
 import type { ReadingStatus, WsMessage } from '@pir/types';
 
@@ -93,6 +94,7 @@ async function poll(): Promise<void> {
 
 async function write(ts: number, raw_db: number | null, status: ReadingStatus): Promise<void> {
   await insertReading(ts, raw_db, status);
+  recordPoll(ts, status === 'ok');
   const msg: WsMessage = { ts, raw_db, status };
   broadcast(msg);
   if (status !== 'ok') {
@@ -104,6 +106,7 @@ async function write(ts: number, raw_db: number | null, status: ReadingStatus): 
 
 async function run(): Promise<void> {
   console.log(`[poller] starting — mock=${config.mockMode} poll=${config.pollMs}ms`);
+  startHealthServer(config.healthPort);
   await poll();
   setInterval(() => { poll().catch(console.error); }, config.pollMs);
 }

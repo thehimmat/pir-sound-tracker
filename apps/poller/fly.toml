@@ -12,8 +12,20 @@ primary_region = "sjc"
   CROP_H     = "34"
   TESSDATA_DIR = "/app/tessdata"
 
-# No HTTP services — this is a pure background worker
 # Secrets (IMAGE_URL, SUPABASE_URL, SUPABASE_ANON_KEY) set via: fly secrets set
+
+[http_service]
+  internal_port = 8080
+  force_https   = true
+  auto_stop_machines  = false
+  auto_start_machines = false
+
+  [[http_service.checks]]
+    interval      = "30s"
+    timeout       = "5s"
+    grace_period  = "15s"
+    method        = "GET"
+    path          = "/health"
 
 [[vm]]
   memory = "512mb"
