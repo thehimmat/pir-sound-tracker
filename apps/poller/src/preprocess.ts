@@ -17,7 +17,7 @@ export async function preprocessImage(raw: Buffer): Promise<Buffer> {
     .normalise()                              // auto-stretch contrast
     .linear(2.0, -(128 * 2.0 - 128))         // increase contrast
     .threshold(140)                           // binarise
-    .resize(width * 2, height * 2, { kernel: sharp.kernel.nearest })
+    .resize(width * 4, height * 4, { kernel: sharp.kernel.nearest })
     .png()
     .toBuffer();
 }
