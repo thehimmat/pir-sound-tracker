@@ -13,7 +13,7 @@ import { simpleHash } from './imageHash.js';
 import { nextMockReading } from './mock.js';
 import { broadcast, startWsServer } from './wsServer.js';
 import { startHealthServer, recordPoll } from './healthServer.js';
-import { insertReading } from '@pir/db';
+import { insertReading, getClient } from '@pir/db';
 import type { ReadingStatus, WsMessage } from '@pir/types';
 
 startWsServer(config.wsPort);
@@ -115,7 +115,18 @@ async function write(ts: number, raw_db: number | null, status: ReadingStatus): 
 async function run(): Promise<void> {
   console.log(`[poller] starting — mock=${config.mockMode} poll=${config.pollMs}ms`);
   startHealthServer(config.healthPort);
-  await poll();
+
+  // Warm up the Supabase TCP/TLS connection before the poll loop starts.
+  // Without this, the first insertReading call takes ~65s (cold TLS handshake)
+  // which blocks recordPoll from being called, causing the health check to fail.
+  try {
+    await getClient().from('readings').select('ts').limit(1);
+    console.log('[poller] supabase connection warmed up');
+  } catch {
+    console.warn('[poller] supabase warmup failed — continuing anyway');
+  }
+
+  poll().catch(console.error);  // don't await — let interval start immediately
   setInterval(() => { poll().catch(console.error); }, config.pollMs);
 }
 
