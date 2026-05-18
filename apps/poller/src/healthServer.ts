@@ -1,13 +1,21 @@
 import { createServer } from 'node:http';
+import { performance } from 'node:perf_hooks';
 
-// Updated by the main poll loop after every cycle
+// Use monotonic timestamps (performance.now()) so NTP step-corrections on
+// container startup don't cause the health check to see a stale poll.
+let lastPollMono:  number | null = null;
+let lastOkMono:    number | null = null;
+
+// Wall-clock timestamps for the /health response body (informational only)
 let lastPollTs: number | null = null;
-let lastOkTs:   number | null = null;
 
 /** Call once per poll cycle so the health endpoint reflects live state. */
 export function recordPoll(ts: number, isOk: boolean): void {
-  lastPollTs = ts;
-  if (isOk) lastOkTs = ts;
+  lastPollMono = performance.now();
+  lastPollTs   = ts;
+  if (isOk) {
+    lastOkMono = performance.now();
+  }
 }
 
 /**
@@ -34,11 +42,11 @@ export function startHealthServer(port: number): void {
       return;
     }
 
-    const now           = Date.now();
-    const lastPollAgoMs = lastPollTs != null ? now - lastPollTs : null;
-    const lastOkAgoMs   = lastOkTs   != null ? now - lastOkTs   : null;
+    const mono          = performance.now();
+    const lastPollAgoMs = lastPollMono != null ? Math.round(mono - lastPollMono) : null;
+    const lastOkAgoMs   = lastOkMono   != null ? Math.round(mono - lastOkMono)   : null;
 
-    // Consider healthy if we've polled within the last 10 s
+    // Consider healthy if we've polled within the last 10 s (monotonic — NTP-safe)
     const alive = lastPollAgoMs != null && lastPollAgoMs < 10_000;
     const code  = alive ? 200 : 503;
 
