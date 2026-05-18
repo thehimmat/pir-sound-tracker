@@ -13,13 +13,21 @@ export function recordPoll(ts: number, isOk: boolean): void {
 /**
  * Start a minimal HTTP server on `port`.
  *
- * GET /health
+ * GET /ping   — always 200 while the process is alive (used by Fly's internal check)
+ * GET /health — smart check for UptimeRobot:
  *   200  { status: "ok",    lastPollAgoMs, lastOkAgoMs }   — poll loop alive
  *   503  { status: "stale", lastPollAgoMs, lastOkAgoMs }   — loop stalled (>10s since last poll)
  *   503  { status: "starting" }                            — not yet polled once
  */
 export function startHealthServer(port: number): void {
   const server = createServer((req, res) => {
+    // Fly's internal liveness check — always 200 if the process is running
+    if (req.url === '/ping') {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('ok');
+      return;
+    }
+
     if (req.url !== '/health') {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('not found');

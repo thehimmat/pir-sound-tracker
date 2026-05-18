@@ -25,7 +25,7 @@ primary_region = "sjc"
     timeout       = "5s"
     grace_period  = "60s"
     method        = "GET"
-    path          = "/health"
+    path          = "/ping"
 
 [[vm]]
   memory = "512mb"
