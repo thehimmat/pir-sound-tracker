@@ -13,7 +13,7 @@ import { simpleHash } from './imageHash.js';
 import { nextMockReading } from './mock.js';
 import { broadcast, startWsServer } from './wsServer.js';
 import { startHealthServer, recordPoll } from './healthServer.js';
-import { insertReading, getClient } from '@pir/db';
+import { insertReading } from '@pir/db';
 import type { ReadingStatus, WsMessage } from '@pir/types';
 
 startWsServer(config.wsPort);
@@ -46,44 +46,39 @@ async function poll(): Promise<void> {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`[poller] fetch error: ${msg}`);
         status = 'error';
-        await write(ts, null, status);
-        return;
       }
 
-      // 2. Blank check
-      const brightness = await avgBrightness(imgBuf);
-      if (brightness > 240) {
-        status = 'blank';
-        await write(ts, null, status);
-        return;
-      }
+      if (status !== 'error') {
+        // 2. Blank check
+        const brightness = await avgBrightness(imgBuf!);
+        if (brightness > 240) {
+          status = 'blank';
+        } else {
+          // 3. Stale check
+          const hash = simpleHash(imgBuf!);
+          if (hash === prevHash) {
+            if (staleFirstTs === null) staleFirstTs = ts;
+            if (ts - staleFirstTs > config.staleAfterMs) status = 'stale';
+          } else {
+            prevHash = hash;
+            staleFirstTs = null;
+          }
 
-      // 3. Stale check
-      const hash = simpleHash(imgBuf);
-      if (hash === prevHash) {
-        if (staleFirstTs === null) staleFirstTs = ts;
-        if (ts - staleFirstTs > config.staleAfterMs) {
-          status = 'stale';
-          await write(ts, null, status);
-          return;
+          if (status === 'ok') {
+            // 4 & 5. Preprocess + OCR
+            const processed = await preprocessImage(imgBuf!);
+            const ocrText   = await ocrImage(processed);
+
+            // 6. Parse
+            const parsed = parseDbReading(ocrText);
+            if (parsed === null) {
+              status = 'ocr_fail';
+              console.warn(`[poller] OCR_FAIL — raw text: "${ocrText.trim()}"`);
+            } else {
+              raw_db = parsed;
+            }
+          }
         }
-      } else {
-        prevHash = hash;
-        staleFirstTs = null;
-      }
-
-      // 4 & 5. Preprocess + OCR
-      const processed = await preprocessImage(imgBuf);
-      const ocrText   = await ocrImage(processed);
-
-      // 6. Parse
-      const parsed = parseDbReading(ocrText);
-      if (parsed === null) {
-        status = 'ocr_fail';
-        console.warn(`[poller] OCR_FAIL — raw text: "${ocrText.trim()}"`);
-      } else {
-        raw_db = parsed;
-        status = 'ok';
       }
     }
   } catch (err) {
@@ -91,42 +86,27 @@ async function poll(): Promise<void> {
     status = 'error';
   }
 
-  await write(ts, raw_db, status);
-}
-
-async function write(ts: number, raw_db: number | null, status: ReadingStatus): Promise<void> {
-  // Record poll immediately — health check must reflect loop cadence, not DB latency
+  // Health and broadcast are synchronous — never blocked by DB latency
   recordPoll(ts, status === 'ok');
   const msg: WsMessage = { ts, raw_db, status };
   broadcast(msg);
-  try {
-    await insertReading(ts, raw_db, status);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[poller] supabase write error: ${msg}`);
-  }
+
   if (status !== 'ok') {
     console.log(`[poller] ${new Date(ts).toISOString()} status=${status}`);
   } else {
     console.log(`[poller] ${new Date(ts).toISOString()} db=${raw_db} dB`);
   }
+
+  // DB write is fire-and-forget — never blocks the poll loop
+  insertReading(ts, raw_db, status).catch(err => {
+    console.error('[poller] supabase write error:', err instanceof Error ? err.message : err);
+  });
 }
 
 async function run(): Promise<void> {
   console.log(`[poller] starting — mock=${config.mockMode} poll=${config.pollMs}ms`);
   startHealthServer(config.healthPort);
-
-  // Warm up the Supabase TCP/TLS connection before the poll loop starts.
-  // Without this, the first insertReading call takes ~65s (cold TLS handshake)
-  // which blocks recordPoll from being called, causing the health check to fail.
-  try {
-    await getClient().from('readings').select('ts').limit(1);
-    console.log('[poller] supabase connection warmed up');
-  } catch {
-    console.warn('[poller] supabase warmup failed — continuing anyway');
-  }
-
-  poll().catch(console.error);  // don't await — let interval start immediately
+  poll().catch(console.error);
   setInterval(() => { poll().catch(console.error); }, config.pollMs);
 }
 
