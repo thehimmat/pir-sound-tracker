@@ -19,6 +19,8 @@ export interface DayBlock {
   bucket_start: number;   // Unix ms — start of 10-min bucket
   high_db: number | null;
   reading_count: number;
+  /** Most common non-ok status in this bucket; null when all readings were ok or bucket is empty. */
+  dominant_status?: ReadingStatus | null;
 }
 
 export interface WsMessage {

@@ -23,6 +23,19 @@ function fmtBucket(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// Human-readable explanation for each non-ok status.
+// reading_count === 0 means no rows at all in the DB for this bucket — our poller was offline.
+function gapReason(block: DayBlock): string {
+  if (block.reading_count === 0)          return 'Our poller was offline';
+  switch (block.dominant_status) {
+    case 'error':    return "PIR's website was unreachable";
+    case 'stale':    return 'Display was frozen (image unchanged for 10+ s)';
+    case 'blank':    return 'Display was off or blank';
+    case 'ocr_fail': return "Couldn't read the display (OCR failure)";
+    default:         return 'No data collected';
+  }
+}
+
 // Fully custom tooltip so we control rendering for both data and gap slots.
 // Recharts excludes null-value items from activePayload, so we read the block
 // directly from payload[0].payload instead of relying on the value.
@@ -43,9 +56,9 @@ function BlockTooltip({ active, payload, label }: TooltipProps<number, string>) 
       lineHeight: 1.5,
     }}>
       <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 4 }}>{timeStr}</div>
-      {block.high_db === null
-        ? <span style={{ color: '#64748b', fontStyle: 'italic' }}>No data collected</span>
-        : <span style={{ color: '#22c55e' }}>{block.high_db.toFixed(1)} dB peak</span>
+      {block.high_db !== null
+        ? <span style={{ color: '#22c55e' }}>{block.high_db.toFixed(1)} dB peak</span>
+        : <span style={{ color: '#64748b', fontStyle: 'italic' }}>{gapReason(block)}</span>
       }
     </div>
   );
