@@ -46,8 +46,10 @@ export function startHealthServer(port: number): void {
     const lastPollAgoMs = lastPollMono != null ? Math.round(mono - lastPollMono) : null;
     const lastOkAgoMs   = lastOkMono   != null ? Math.round(mono - lastOkMono)   : null;
 
-    // Consider healthy if we've polled within the last 10 s (monotonic — NTP-safe)
-    const alive = lastPollAgoMs != null && lastPollAgoMs < 10_000;
+    // Consider healthy if we've polled within the last 60 min (monotonic — NTP-safe).
+    // This means /health returns 503 only after a genuine hour-long outage on our side,
+    // so UptimeRobot (free tier, no alert-delay support) only fires after real downtime.
+    const alive = lastPollAgoMs != null && lastPollAgoMs < 3_600_000;
     const code  = alive ? 200 : 503;
 
     const body = JSON.stringify({
