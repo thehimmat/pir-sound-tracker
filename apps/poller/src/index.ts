@@ -95,15 +95,16 @@ async function poll(): Promise<void> {
 }
 
 async function write(ts: number, raw_db: number | null, status: ReadingStatus): Promise<void> {
+  // Record poll immediately — health check must reflect loop cadence, not DB latency
+  recordPoll(ts, status === 'ok');
+  const msg: WsMessage = { ts, raw_db, status };
+  broadcast(msg);
   try {
     await insertReading(ts, raw_db, status);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[poller] supabase write error: ${msg}`);
   }
-  recordPoll(ts, status === 'ok');
-  const msg: WsMessage = { ts, raw_db, status };
-  broadcast(msg);
   if (status !== 'ok') {
     console.log(`[poller] ${new Date(ts).toISOString()} status=${status}`);
   } else {
