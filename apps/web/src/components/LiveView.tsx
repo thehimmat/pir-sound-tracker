@@ -61,7 +61,15 @@ export function LiveView() {
   return (
     <div>
       {feedOffline && (
-        <div style={bannerStyle('#b91c1c')}>Feed offline — meter not reporting</div>
+        <div style={bannerStyle('#b91c1c')}>
+          {latest?.status === 'error'
+            ? 'PIR\'s website is unreachable'
+            : latest?.status === 'blank'
+              ? 'PIR\'s noise display appears to be off'
+              : latest?.status === 'stale'
+                ? 'PIR\'s noise display is frozen — image not updating'
+                : 'Feed offline — meter not reporting'}
+        </div>
       )}
       {varianceEvent && (
         <div style={{

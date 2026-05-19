@@ -13,11 +13,16 @@ function dbColor(value: number | null, limitDb: number): string {
   return '#22c55e';
 }
 
+// Human-readable label shown beneath the dB number.
+// error    = fetch to PIR's server failed entirely (site unreachable / HTTP error)
+// blank    = site responded but image is white — display is off or not showing
+// stale    = image hasn't changed for 10+ s — display is frozen
+// ocr_fail = display visible but number couldn't be parsed
 const STATUS_LABELS: Record<string, string> = {
-  blank:    'BLANK',
-  stale:    'STALE',
-  error:    'ERROR',
-  ocr_fail: 'OCR FAIL',
+  error:    'PIR site down',
+  blank:    'Display off',
+  stale:    'Meter frozen',
+  ocr_fail: "Can't read meter",
 };
 
 export function DbDisplay({ value, status, limitDb = 103 }: Props) {

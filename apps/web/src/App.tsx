@@ -51,6 +51,10 @@ export default function App() {
         <button onClick={() => setTab('about')} style={footerLinkBtn}>
           About this project
         </button>
+        {' · '}
+        <a href="https://portlandraceway.com/?/about/noise_information" target="_blank" rel="noopener noreferrer" style={linkStyle}>
+          PIR noise info
+        </a>
       </footer>
     </div>
   );
