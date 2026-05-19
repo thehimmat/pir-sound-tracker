@@ -60,15 +60,23 @@ export function LiveView() {
 
   return (
     <div>
-      {feedOffline && (
+      {feedOffline && latest?.status !== 'ok' && (
         <div style={bannerStyle('#b91c1c')}>
           {latest?.status === 'error'
-            ? 'PIR\'s website is unreachable'
+            ? "PIR's website is unreachable"
             : latest?.status === 'blank'
-              ? 'PIR\'s noise display appears to be off'
+              ? "PIR's noise display appears to be off"
               : latest?.status === 'stale'
-                ? 'PIR\'s noise display is frozen — image not updating'
+                ? "PIR's noise display is frozen — image not updating"
                 : 'Feed offline — meter not reporting'}
+          {(latest?.status === 'error' || latest?.status === 'blank' || latest?.status === 'stale') && (
+            <> · <a
+              href="https://portlandraceway.com/?/about/noise_information"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#fca5a5', textDecoration: 'underline' }}
+            >check PIR's site</a></>
+          )}
         </div>
       )}
       {varianceEvent && (
