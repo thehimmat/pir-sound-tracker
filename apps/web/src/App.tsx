@@ -23,7 +23,7 @@ export default function App() {
           <h1 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0', marginBottom: 16 }}>
             Portland International Raceway — Noise Monitor
           </h1>
-          <nav style={{ display: 'flex', gap: 4 }}>
+          <nav style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             {TABS.map(t => (
               <button
                 key={t.id}
@@ -33,6 +33,23 @@ export default function App() {
                 {t.label}
               </button>
             ))}
+            <a
+              href="https://www.portland.gov/ppd/noise/noise-concerns"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: '6px 18px',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 500,
+                background: '#7f1d1d',
+                color: '#fca5a5',
+                textDecoration: 'none',
+                marginLeft: 8,
+              }}
+            >
+              File noise complaint ↗
+            </a>
           </nav>
         </header>
 
