@@ -8,13 +8,21 @@ import { SummaryBar } from './SummaryBar.js';
 import { getLimitForDate, getEventForDate } from '../utils/varianceEvents.js';
 
 const OFFLINE_THRESHOLD_MS = 10_000;
+const SILENCE_THRESHOLD_MS = 15_000; // no WS message at all → poller offline
 const HISTORY_TIMEOUT_MS   = 15_000;
 
 export function LiveView() {
   const [latest, setLatest] = useState<WsMessage | null>(null);
   const [liveReadings, setLiveReadings] = useState<Reading[]>([]);
-  const offlineTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offlineTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const silenceTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [feedOffline, setFeedOffline] = useState(false);
+
+  // Start silence detector immediately — fires if no WS message arrives within 15s
+  useEffect(() => {
+    silenceTimer.current = setTimeout(() => setFeedOffline(true), SILENCE_THRESHOLD_MS);
+    return () => { if (silenceTimer.current) clearTimeout(silenceTimer.current); };
+  }, []);
 
   const { data: hourReadings, loading: historyLoading, error: historyError, refetch: refetchHistory } =
     useApi<Reading[]>('/api/readings/hour');
@@ -28,6 +36,9 @@ export function LiveView() {
   }, [historyLoading]);
 
   useRealtimeReadings(useCallback((msg: WsMessage) => {
+    // Any message resets the silence detector
+    if (silenceTimer.current) { clearTimeout(silenceTimer.current); silenceTimer.current = null; }
+
     setLatest(msg);
     setLiveReadings(prev => {
       const cutoff = Date.now() - 10 * 60 * 1000;

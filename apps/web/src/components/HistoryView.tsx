@@ -23,8 +23,8 @@ export function HistoryView() {
             <Th>Date</Th>
             <Th>High dB</Th>
             <Th>Violations</Th>
-            <Th>Readings</Th>
-            <Th title="Seconds where the source display was unreachable or unreadable">Errors</Th>
+            <Th>Good reads</Th>
+            <Th title="Poll attempts where the source display was unreachable or unreadable">Failed</Th>
           </tr>
         </thead>
         <tbody>

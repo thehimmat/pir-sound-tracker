@@ -15,10 +15,12 @@ primary_region = "sjc"
 # Secrets (IMAGE_URL, SUPABASE_URL, SUPABASE_ANON_KEY) set via: fly secrets set
 
 [http_service]
-  internal_port = 8080
-  force_https   = true
-  auto_stop_machines  = false
-  auto_start_machines = false
+  internal_port        = 8080
+  force_https          = true
+  auto_stop_machines   = false
+  auto_start_machines  = false
+  min_machines_running = 1
+  max_machines_running = 1
 
   [[http_service.checks]]
     interval      = "30s"
