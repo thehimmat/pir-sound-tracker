@@ -30,11 +30,21 @@ let statOk = 0;
 let statFail = 0;
 let statIntervalHandle: ReturnType<typeof setInterval>;
 
+const FETCH_TIMEOUT_MS = 10_000;
+
 async function fetchImageBuffer(): Promise<Buffer> {
   const url = `${config.imageUrl}&t=${Date.now()}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length === 0) throw new Error('empty response body');
+    return buf;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function poll(): Promise<void> {
