@@ -16,12 +16,9 @@ function envInt(key: string, fallback: number): number {
   return v !== undefined ? parseInt(v, 10) : fallback;
 }
 
-const repoRoot = resolve(__dirname, '../../..');
-
 export const config = {
   imageUrl:  env('IMAGE_URL', ''),
   mockMode:  env('MOCK_MODE', 'false') === 'true',
-  dbPath:    env('DB_PATH', resolve(repoRoot, 'data/readings.db')),
   wsPort:    envInt('WS_PORT', 3001),
   cropX:     envInt('CROP_X', 0),
   cropY:     envInt('CROP_Y', 46),   // percent from top — targets the large LAFmax digit

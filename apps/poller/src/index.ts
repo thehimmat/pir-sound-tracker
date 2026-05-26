@@ -21,6 +21,15 @@ startWsServer(config.wsPort);
 let prevHash: string | null = null;
 let staleFirstTs: number | null = null;
 
+// Consecutive non-ok tracking for escalated logging
+let consecutiveFailCount = 0;
+let consecutiveFailStatus: ReadingStatus | null = null;
+
+// Running totals for periodic stats
+let statOk = 0;
+let statFail = 0;
+let statIntervalHandle: ReturnType<typeof setInterval>;
+
 async function fetchImageBuffer(): Promise<Buffer> {
   const url = `${config.imageUrl}&t=${Date.now()}`;
   const res = await fetch(url);
@@ -67,13 +76,13 @@ async function poll(): Promise<void> {
           if (status === 'ok') {
             // 4 & 5. Preprocess + OCR
             const processed = await preprocessImage(imgBuf!);
-            const ocrText   = await ocrImage(processed);
+            const { text: ocrText, confidence } = await ocrImage(processed);
 
             // 6. Parse
             const parsed = parseDbReading(ocrText);
             if (parsed === null) {
               status = 'ocr_fail';
-              console.warn(`[poller] OCR_FAIL — raw text: "${ocrText.trim()}"`);
+              console.warn(`[poller] OCR_FAIL — confidence=${confidence.toFixed(0)}% raw="${ocrText.trim()}"`);
             } else {
               raw_db = parsed;
             }
@@ -86,13 +95,38 @@ async function poll(): Promise<void> {
     status = 'error';
   }
 
+  // Consecutive failure escalation
+  if (status !== 'ok') {
+    if (status === consecutiveFailStatus) {
+      consecutiveFailCount++;
+    } else {
+      consecutiveFailCount = 1;
+      consecutiveFailStatus = status;
+    }
+    // Escalate log after 10 consecutive same-status failures (10s at 1s poll)
+    if (consecutiveFailCount === 10 || consecutiveFailCount % 60 === 0) {
+      console.error(`[poller] status=${status} for ${consecutiveFailCount} consecutive polls (~${Math.round(consecutiveFailCount * config.pollMs / 1000)}s)`);
+    }
+    statFail++;
+  } else {
+    if (consecutiveFailCount > 0) {
+      console.log(`[poller] recovered from ${consecutiveFailCount}× ${consecutiveFailStatus} — back to ok`);
+    }
+    consecutiveFailCount = 0;
+    consecutiveFailStatus = null;
+    statOk++;
+  }
+
   // Health and broadcast are synchronous — never blocked by DB latency
   recordPoll(ts, status === 'ok');
   const msg: WsMessage = { ts, raw_db, status };
   broadcast(msg);
 
   if (status !== 'ok') {
-    console.log(`[poller] ${new Date(ts).toISOString()} status=${status}`);
+    // Only log first occurrence + escalation points (handled above) to avoid log spam
+    if (consecutiveFailCount === 1) {
+      console.log(`[poller] ${new Date(ts).toISOString()} status=${status}`);
+    }
   } else {
     console.log(`[poller] ${new Date(ts).toISOString()} db=${raw_db} dB`);
   }
@@ -104,13 +138,36 @@ async function poll(): Promise<void> {
 }
 
 async function run(): Promise<void> {
-  console.log(`[poller] starting — mock=${config.mockMode} poll=${config.pollMs}ms`);
+  const imageHost = config.imageUrl ? (() => { try { return new URL(config.imageUrl).hostname; } catch { return '(invalid url)'; } })() : '(not set)';
+  console.log(`[poller] starting — mock=${config.mockMode} poll=${config.pollMs}ms ws=${config.wsPort} health=${config.healthPort} imageHost=${imageHost}`);
+  const mem = process.memoryUsage();
+  console.log(`[poller] initial memory — rss=${Math.round(mem.rss / 1024 / 1024)}MB heap=${Math.round(mem.heapUsed / 1024 / 1024)}/${Math.round(mem.heapTotal / 1024 / 1024)}MB`);
+
   startHealthServer(config.healthPort);
+
+  // Log stats + memory every 5 minutes
+  statIntervalHandle = setInterval(() => {
+    const total = statOk + statFail;
+    const mem = process.memoryUsage();
+    console.log(`[poller] 5-min stats — ok=${statOk} fail=${statFail} total=${total} (${total > 0 ? Math.round(statOk / total * 100) : 0}% ok) | rss=${Math.round(mem.rss / 1024 / 1024)}MB heap=${Math.round(mem.heapUsed / 1024 / 1024)}MB`);
+    statOk = 0;
+    statFail = 0;
+  }, 5 * 60 * 1000);
+
   poll().catch(console.error);
   setInterval(() => { poll().catch(console.error); }, config.pollMs);
 }
 
-run().catch(err => { console.error(err); process.exit(1); });
+run().catch(err => { console.error('[poller] startup error:', err); process.exit(1); });
 
-process.on('SIGINT',  async () => { await terminateOcr(); process.exit(0); });
-process.on('SIGTERM', async () => { await terminateOcr(); process.exit(0); });
+process.on('SIGINT',  async () => { clearInterval(statIntervalHandle); await terminateOcr(); process.exit(0); });
+process.on('SIGTERM', async () => { clearInterval(statIntervalHandle); await terminateOcr(); process.exit(0); });
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[poller] unhandledRejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[poller] uncaughtException:', err);
+  process.exit(1);
+});

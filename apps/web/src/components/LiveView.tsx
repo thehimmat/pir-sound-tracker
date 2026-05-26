@@ -36,8 +36,9 @@ export function LiveView() {
   }, [historyLoading]);
 
   useRealtimeReadings(useCallback((msg: WsMessage) => {
-    // Any message resets the silence detector
-    if (silenceTimer.current) { clearTimeout(silenceTimer.current); silenceTimer.current = null; }
+    // Restart silence detector on every message — cleared+null would leave it permanently disabled
+    if (silenceTimer.current) clearTimeout(silenceTimer.current);
+    silenceTimer.current = setTimeout(() => setFeedOffline(true), SILENCE_THRESHOLD_MS);
 
     setLatest(msg);
     setLiveReadings(prev => {

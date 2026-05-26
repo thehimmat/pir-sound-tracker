@@ -22,10 +22,10 @@ async function getWorker(): Promise<Tesseract.Worker> {
   return worker;
 }
 
-export async function ocrImage(imageBuffer: Buffer): Promise<string> {
+export async function ocrImage(imageBuffer: Buffer): Promise<{ text: string; confidence: number }> {
   const w = await getWorker();
   const { data } = await w.recognize(imageBuffer);
-  return data.text;
+  return { text: data.text, confidence: data.confidence };
 }
 
 export async function terminateOcr(): Promise<void> {

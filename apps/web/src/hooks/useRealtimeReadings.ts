@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import type { WsMessage } from '@pir/types';
 
@@ -30,7 +30,11 @@ export function useRealtimeReadings(onReading: (msg: WsMessage) => void) {
         },
       )
       .subscribe((status) => {
+        console.log(`[realtime] channel status: ${status}`);
         setConnected(status === 'SUBSCRIBED');
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`[realtime] ${status} — Supabase will attempt to reconnect automatically`);
+        }
       });
 
     return () => { supabase.removeChannel(channel); };
