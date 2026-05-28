@@ -42,10 +42,8 @@ export async function ocrImage(imageBuffer: Buffer): Promise<{ text: string; con
   } catch (err) {
     clearTimeout(timeoutHandle!);
     if (err instanceof Error && err.message.startsWith('OCR timeout')) {
-      console.error('[ocr] worker timed out — cycling worker, will recreate on next poll');
-      const dead = worker;
-      worker = null;                         // next getWorker() creates a fresh instance
-      dead?.terminate().catch(() => {});     // best-effort cleanup, fire-and-forget
+      console.error('[ocr] worker timed out — exiting for clean restart (avoids double-OOM from worker cycling)');
+      process.exit(1);
     }
     throw err; // poll() catches this as status='error' and continues
   }
