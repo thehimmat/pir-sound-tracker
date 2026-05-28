@@ -34,5 +34,5 @@ primary_region = "sjc"
   cpu_kind = "shared"
   cpus = 1
 
-[restart]
+[[restart]]
   policy = "on-failure"
