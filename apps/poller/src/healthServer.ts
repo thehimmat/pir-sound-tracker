@@ -9,6 +9,12 @@ let lastOkMono:    number | null = null;
 // Wall-clock timestamps for the /health response body (informational only)
 let lastPollTs: number | null = null;
 
+/** Milliseconds since the last completed poll(), or null before the first poll. */
+export function getPollAgeMs(): number | null {
+  if (lastPollMono === null) return null;
+  return Math.round(performance.now() - lastPollMono);
+}
+
 /** Call once per poll cycle so the health endpoint reflects live state. */
 export function recordPoll(ts: number, isOk: boolean): void {
   lastPollMono = performance.now();

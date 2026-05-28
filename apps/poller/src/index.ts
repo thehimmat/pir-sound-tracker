@@ -12,7 +12,7 @@ import { parseDbReading } from './parser.js';
 import { simpleHash } from './imageHash.js';
 import { nextMockReading } from './mock.js';
 import { broadcast, startWsServer } from './wsServer.js';
-import { startHealthServer, recordPoll } from './healthServer.js';
+import { startHealthServer, recordPoll, getPollAgeMs } from './healthServer.js';
 import { insertReading } from '@pir/db';
 import type { ReadingStatus, WsMessage } from '@pir/types';
 
@@ -154,6 +154,18 @@ async function run(): Promise<void> {
   console.log(`[poller] initial memory — rss=${Math.round(mem.rss / 1024 / 1024)}MB heap=${Math.round(mem.heapUsed / 1024 / 1024)}/${Math.round(mem.heapTotal / 1024 / 1024)}MB`);
 
   startHealthServer(config.healthPort);
+
+  // Watchdog: if poll loop stalls for >2 minutes, exit so Fly restarts us automatically.
+  // The OCR 30s timeout handles the most common hang (Tesseract worker degradation);
+  // this is a backstop for any other unforeseen stall scenario.
+  const WATCHDOG_STALL_MS = 120_000;
+  setInterval(() => {
+    const ageMs = getPollAgeMs();
+    if (ageMs !== null && ageMs > WATCHDOG_STALL_MS) {
+      console.error(`[poller] watchdog: loop stalled ${Math.round(ageMs / 1000)}s — exiting for auto-restart`);
+      process.exit(1);
+    }
+  }, 15_000);
 
   // Log stats + memory every 5 minutes
   statIntervalHandle = setInterval(() => {

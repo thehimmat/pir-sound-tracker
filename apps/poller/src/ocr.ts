@@ -22,10 +22,33 @@ async function getWorker(): Promise<Tesseract.Worker> {
   return worker;
 }
 
+const OCR_TIMEOUT_MS = 30_000;
+
 export async function ocrImage(imageBuffer: Buffer): Promise<{ text: string; confidence: number }> {
   const w = await getWorker();
-  const { data } = await w.recognize(imageBuffer);
-  return { text: data.text, confidence: data.confidence };
+
+  let timeoutHandle: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error(`OCR timeout after ${OCR_TIMEOUT_MS / 1000}s`)),
+      OCR_TIMEOUT_MS,
+    );
+  });
+
+  try {
+    const { data } = await Promise.race([w.recognize(imageBuffer), timeoutPromise]);
+    clearTimeout(timeoutHandle!);
+    return { text: data.text, confidence: data.confidence };
+  } catch (err) {
+    clearTimeout(timeoutHandle!);
+    if (err instanceof Error && err.message.startsWith('OCR timeout')) {
+      console.error('[ocr] worker timed out — cycling worker, will recreate on next poll');
+      const dead = worker;
+      worker = null;                         // next getWorker() creates a fresh instance
+      dead?.terminate().catch(() => {});     // best-effort cleanup, fire-and-forget
+    }
+    throw err; // poll() catches this as status='error' and continues
+  }
 }
 
 export async function terminateOcr(): Promise<void> {
