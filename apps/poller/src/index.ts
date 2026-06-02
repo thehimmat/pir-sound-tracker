@@ -176,8 +176,18 @@ async function run(): Promise<void> {
     statFail = 0;
   }, 5 * 60 * 1000);
 
-  poll().catch(console.error);
-  setInterval(() => { poll().catch(console.error); }, config.pollMs);
+  // Sequential poll loop: wait for each poll to complete before scheduling the next.
+  // This prevents concurrent poll accumulation when OCR is slow (e.g. Tesseract takes
+  // 2-3s under load), which was causing memory spikes from stacked image buffers.
+  async function loopOnce(): Promise<void> {
+    const start = Date.now();
+    await poll().catch(console.error);
+    const elapsed = Date.now() - start;
+    const delay = Math.max(0, config.pollMs - elapsed);
+    setTimeout(loopOnce, delay);
+  }
+
+  loopOnce();
 }
 
 run().catch(err => { console.error('[poller] startup error:', err); process.exit(1); });

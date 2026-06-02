@@ -170,6 +170,29 @@ outline as "3" and prepended it to the reading: `57.6` → `357.6` → rejected 
 
 ---
 
+## Root cause #6 — Concurrent poll accumulation (memory spikes under slow OCR)
+
+**Symptom:** Intermittent OOM crashes even with 1GB VM; memory spikes visible in
+5-minute stats logs.
+
+**Cause:** Poll loop used `setInterval` at 1s intervals but did not await each poll.
+When Tesseract took 2-3s under load, polls piled up concurrently: each held a
+JPEG buffer in memory and queued a `worker.recognize()` call. With a 30s OCR
+timeout you could accumulate ~30 concurrent polls before the timeout triggered
+`process.exit(1)`. That's 30x the normal buffer memory plus V8 heap pressure from
+30 pending promises.
+
+**Fix applied (June 2026):** Replaced `setInterval` with a recursive `setTimeout`
+loop in `index.ts`. Each poll completes fully before the next is scheduled. The
+loop still targets 1s cadence: if a poll finishes in 800ms, the next starts after
+a 200ms delay; if a poll takes 1.5s, the next starts immediately (0ms delay).
+
+Also hardened `ocr.ts`: non-timeout worker errors now terminate and null the worker
+so the next poll gets a fresh one, rather than reusing a potentially corrupted
+worker state.
+
+---
+
 ## Current configuration (as of June 2026)
 
 ```toml

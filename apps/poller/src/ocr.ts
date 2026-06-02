@@ -45,6 +45,11 @@ export async function ocrImage(imageBuffer: Buffer): Promise<{ text: string; con
       console.error('[ocr] worker timed out — exiting for clean restart (avoids double-OOM from worker cycling)');
       process.exit(1);
     }
+    // Non-timeout error: terminate and null the worker so the next call gets a fresh one.
+    // A corrupted worker state would otherwise silently degrade every subsequent poll.
+    console.error('[ocr] worker error — resetting worker for next poll:', err instanceof Error ? err.message : err);
+    worker?.terminate().catch(() => {});
+    worker = null;
     throw err; // poll() catches this as status='error' and continues
   }
 }
