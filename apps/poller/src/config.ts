@@ -27,4 +27,6 @@ export const config = {
   pollMs:       envInt('POLL_MS', 1000),
   healthPort:   envInt('HEALTH_PORT', 8080),
   staleAfterMs: 10_000,
+  // TESSDATA_PREFIX is read directly in ocr.ts (not via config) to match the
+  // env var name that tesseract CLI expects.
 } as const;

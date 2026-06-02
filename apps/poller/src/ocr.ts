@@ -1,60 +1,66 @@
-import Tesseract from 'tesseract.js';
-import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
 
-// In Docker the model is pre-baked to /app/tessdata via Dockerfile.
-// Locally it falls back to the project root (where eng.traineddata is downloaded on first run).
-const LANG_PATH = process.env.TESSDATA_DIR
-  ?? dirname(dirname(fileURLToPath(import.meta.url)));  // …/apps/poller
+// Tesseract CLI reads from stdin when given 'stdin' as the input path.
+// TESSDATA_PREFIX is set in the Dockerfile to /app/tessdata.
+// Locally it falls back to the project root where eng.traineddata lives.
+const TESSDATA_PREFIX = process.env.TESSDATA_DIR
+  ?? new URL('../../..', import.meta.url).pathname;  // …/apps/poller → monorepo root
 
-let worker: Tesseract.Worker | null = null;
-
-async function getWorker(): Promise<Tesseract.Worker> {
-  if (worker) return worker;
-  worker = await Tesseract.createWorker('eng', 1, {
-    logger:   () => {},
-    langPath: LANG_PATH,
-  });
-  await worker.setParameters({
-    tessedit_char_whitelist: '0123456789.',
-    tessedit_pageseg_mode:   Tesseract.PSM.SINGLE_LINE,
-  });
-  return worker;
-}
-
-const OCR_TIMEOUT_MS = 30_000;
+const OCR_TIMEOUT_MS = 10_000;
 
 export async function ocrImage(imageBuffer: Buffer): Promise<{ text: string; confidence: number }> {
-  const w = await getWorker();
-
-  let timeoutHandle: ReturnType<typeof setTimeout>;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutHandle = setTimeout(
-      () => reject(new Error(`OCR timeout after ${OCR_TIMEOUT_MS / 1000}s`)),
-      OCR_TIMEOUT_MS,
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      'tesseract',
+      [
+        'stdin', 'stdout',
+        '--psm', '7',          // single text line
+        '--oem', '1',          // LSTM engine
+        '-c', 'tessedit_char_whitelist=0123456789.',
+      ],
+      { env: { ...process.env, TESSDATA_PREFIX } },
     );
-  });
 
-  try {
-    const { data } = await Promise.race([w.recognize(imageBuffer), timeoutPromise]);
-    clearTimeout(timeoutHandle!);
-    return { text: data.text, confidence: data.confidence };
-  } catch (err) {
-    clearTimeout(timeoutHandle!);
-    if (err instanceof Error && err.message.startsWith('OCR timeout')) {
-      console.error('[ocr] worker timed out — exiting for clean restart (avoids double-OOM from worker cycling)');
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      // Exit the whole process so Fly restarts cleanly.
+      // Unlike the tesseract.js worker approach, the kill above is guaranteed
+      // to fire even under heavy CPU load because it runs at the OS level.
+      console.error('[ocr] tesseract timed out — killing subprocess and exiting for auto-restart');
       process.exit(1);
-    }
-    // Non-timeout error: terminate and null the worker so the next call gets a fresh one.
-    // A corrupted worker state would otherwise silently degrade every subsequent poll.
-    console.error('[ocr] worker error — resetting worker for next poll:', err instanceof Error ? err.message : err);
-    worker?.terminate().catch(() => {});
-    worker = null;
-    throw err; // poll() catches this as status='error' and continues
-  }
+    }, OCR_TIMEOUT_MS);
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
+    child.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code !== 0 && code !== null) {
+        // Tesseract exits non-zero on warnings (e.g. empty page) — treat as soft error
+        const msg = stderr.trim();
+        if (stdout.trim()) {
+          // Got text despite non-zero exit — proceed
+          resolve({ text: stdout, confidence: 0 });
+        } else {
+          reject(new Error(`tesseract exited ${code}: ${msg}`));
+        }
+        return;
+      }
+      // Tesseract CLI appends a trailing newline and "Form Feed" (\f) — strip both
+      resolve({ text: stdout.replace(/[\f\n]+$/, ''), confidence: 0 });
+    });
+
+    child.stdin.on('error', () => { /* ignore EPIPE if child exits early */ });
+    child.stdin.end(imageBuffer);
+  });
 }
 
-export async function terminateOcr(): Promise<void> {
-  await worker?.terminate();
-  worker = null;
-}
+// No-op: CLI spawns a fresh process per call, nothing to tear down.
+export async function terminateOcr(): Promise<void> {}

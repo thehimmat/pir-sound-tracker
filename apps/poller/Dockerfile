@@ -1,6 +1,9 @@
 FROM node:22-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -23,12 +26,10 @@ RUN npm run build --workspace=packages/types && \
     npm run build --workspace=packages/db && \
     npm run build --workspace=apps/poller
 
-# Bake the local Tesseract model as .gz (tesseract.js requires that extension).
-# Avoids CDN download at build time and ensures a known-good model.
-ENV TESSDATA_DIR=/app/tessdata
+# Bake the Tesseract model. The CLI needs it uncompressed at TESSDATA_PREFIX.
+# (No gzip step needed — tesseract.js is no longer used.)
+ENV TESSDATA_PREFIX=/app/tessdata
 RUN mkdir -p /app/tessdata
 COPY apps/poller/eng.traineddata /app/tessdata/eng.traineddata
-RUN gzip /app/tessdata/eng.traineddata
-# Result: /app/tessdata/eng.traineddata.gz
 
 CMD ["node", "apps/poller/dist/index.js"]
