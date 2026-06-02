@@ -3,8 +3,9 @@ import { LiveView } from './components/LiveView.js';
 import { TodayView } from './components/TodayView.js';
 import { HistoryView } from './components/HistoryView.js';
 import { AboutView } from './components/AboutView.js';
+import { SupportView } from './components/SupportView.js';
 
-type Tab = 'live' | 'today' | 'history' | 'about';
+type Tab = 'live' | 'today' | 'history' | 'about' | 'support';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'live',    label: 'Live' },
@@ -57,6 +58,7 @@ export default function App() {
         {tab === 'today'   && <TodayView />}
         {tab === 'history' && <HistoryView />}
         {tab === 'about'   && <AboutView />}
+        {tab === 'support' && <SupportView />}
       </div>
 
       <footer style={footerStyle}>
@@ -66,7 +68,11 @@ export default function App() {
         </a>
         {' · '}
         <button onClick={() => setTab('about')} style={footerLinkBtn}>
-          About this project
+          About
+        </button>
+        {' · '}
+        <button onClick={() => setTab('support')} style={{ ...footerLinkBtn, color: '#f87171' }}>
+          Support this project
         </button>
         {' · '}
         <a href="https://portlandraceway.com/?/about/noise_information" target="_blank" rel="noopener noreferrer" style={linkStyle}>
