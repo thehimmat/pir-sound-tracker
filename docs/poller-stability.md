@@ -212,6 +212,41 @@ visible in logs and can be compared against these estimates.
 
 ---
 
+## Root cause #7 — Tesseract.js WASM starves event loop, OCR timeout can never fire
+
+**Symptom:** OOM kill at 843MB RSS on a 1GB VM. The process started at 83MB and
+grew to 843MB within ~2 minutes — sometimes even while all fetches were aborting
+and no OCR appeared to be running.
+
+**Root cause:** Tesseract.js runs the OCR engine in a WASM module inside a Node.js
+`worker_thread`. On a 1-vCPU shared Fly machine, the WASM thread monopolizes the
+CPU when processing (or getting stuck on) an image. This starves the main event
+loop, so the `setTimeout`-based OCR timeout callback never gets scheduled.
+Meanwhile, the WASM heap grows unboundedly. By the time the Linux OOM killer fires,
+the `process.exit(1)` timeout has still not run.
+
+The `/health` endpoint failing its Fly service check mid-run confirmed event loop
+starvation — the HTTP server could not respond while WASM was running.
+
+**Fix applied (June 2026):** Replaced `tesseract.js` entirely with the
+**Tesseract CLI** (`child_process.spawn`). Each OCR call spawns a fresh `tesseract`
+subprocess:
+- `child.kill('SIGKILL')` on timeout is an OS-level kill — fires regardless of
+  CPU load or event loop state
+- The subprocess's memory is separate from the Node.js process — a hung or
+  runaway Tesseract cannot OOM the poller
+- No worker thread, no WASM heap, no GC pressure in the main process
+- Each call is stateless — no "degraded worker" accumulation
+
+**Dockerfile change:** Added `tesseract-ocr` apt package. Removed the `gzip` step
+(the CLI needs uncompressed `.traineddata`; `tesseract.js` needed `.gz`).
+
+**Measured timings on Fly (June 2026):** fetch 75–1263ms, preprocess 33–55ms,
+OCR 142–168ms (2168ms first call, cold start). Total per poll ~1–1.5s, maintaining
+approximately 1 row/second in the DB.
+
+---
+
 ## Current configuration (as of June 2026)
 
 ```toml
