@@ -112,34 +112,17 @@ export function SupportView() {
 
       <h3 style={h3}>Get in touch</h3>
       <p style={{ marginBottom: 12 }}>
-        Found a bug, have a feature idea, or just want to say something? Choose
-        whatever's easiest:
+        Found a bug, have a feature idea, or just want to say something?
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <a
-          href="https://github.com/thehimmat/pir-sound-tracker/issues/new?labels=bug&template=bug_report.md"
+          href="https://ko-fi.com/thehimmat"
           target="_blank"
           rel="noopener noreferrer"
-          style={contactBtn('#1e293b', '#38bdf8')}
-        >
-          <span style={{ fontSize: 16, marginRight: 10 }}>🐛</span>
-          Report a bug on GitHub
-        </a>
-        <a
-          href="https://github.com/thehimmat/pir-sound-tracker/issues/new?labels=enhancement"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={contactBtn('#1e293b', '#a78bfa')}
-        >
-          <span style={{ fontSize: 16, marginRight: 10 }}>💡</span>
-          Request a feature on GitHub
-        </a>
-        <a
-          href="mailto:himmatsinghkhalsa@gmail.com?subject=PIR%20Noise%20Monitor"
           style={contactBtn('#1e293b', '#94a3b8')}
         >
           <span style={{ fontSize: 16, marginRight: 10 }}>✉️</span>
-          Send a message by email
+          Send a message via Ko-fi
         </a>
       </div>
 
@@ -150,16 +133,7 @@ export function SupportView() {
           Himmat Singh Khalsa
         </a>
         {' '}as an independent community resource — no affiliation with Portland
-        International Raceway or the City of Portland. Source code is on{' '}
-        <a
-          href="https://github.com/thehimmat/pir-sound-tracker"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={link}
-        >
-          GitHub
-        </a>
-        .
+        International Raceway or the City of Portland.
       </p>
     </div>
   );
