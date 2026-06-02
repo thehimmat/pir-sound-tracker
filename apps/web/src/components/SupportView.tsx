@@ -26,49 +26,127 @@ export function SupportView() {
       </a>
 
       <h3 style={h3}>What it costs to run</h3>
-      <p style={{ color: '#64748b', fontSize: 12, marginBottom: 12 }}>
-        Approximate monthly figures — updated periodically.
-      </p>
       <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13, marginBottom: 8 }}>
         <thead>
           <tr>
             <th style={th}>Service</th>
             <th style={th}>What it does</th>
-            <th style={{ ...th, textAlign: 'right' }}>Est. cost/mo</th>
+            <th style={{ ...th, textAlign: 'right' }}>Cost/mo</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td style={td}>Fly.io</td>
-            <td style={td}>Polling server — fetches and OCR-reads the noise monitor every second, 24/7</td>
-            <td style={{ ...td, textAlign: 'right', fontWeight: 500, color: '#e2e8f0' }}>~$10</td>
+            <td style={td}>
+              <a href="https://fly.io" target="_blank" rel="noopener noreferrer" style={link}>Fly.io</a>
+            </td>
+            <td style={td}>
+              Polling server — captures and OCR-reads the noise monitor every second, 24/7
+              (1 vCPU shared, 1 GB RAM, San Jose)
+            </td>
+            <td style={{ ...td, textAlign: 'right', fontWeight: 500, color: '#e2e8f0', whiteSpace: 'nowrap' }}>$7.23</td>
           </tr>
           <tr>
-            <td style={td}>Supabase</td>
-            <td style={td}>Cloud database — stores every reading (~86,400 rows/day)</td>
-            <td style={{ ...td, textAlign: 'right', fontWeight: 500, color: '#e2e8f0' }}>free tier</td>
+            <td style={td}>
+              <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" style={link}>Supabase</a>
+            </td>
+            <td style={td}>
+              Cloud database — stores ~86,400 readings per day.{' '}
+              <span style={{ color: '#f59e0b' }}>
+                Currently on free tier (500 MB limit). Will need to upgrade to Pro ($25/mo)
+                as the database fills — likely within a few months.
+              </span>
+            </td>
+            <td style={{ ...td, textAlign: 'right', fontWeight: 500, color: '#94a3b8', whiteSpace: 'nowrap' }}>free*</td>
           </tr>
           <tr>
-            <td style={td}>Vercel</td>
+            <td style={td}>
+              <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" style={link}>Vercel</a>
+            </td>
             <td style={td}>Hosts this website and the data API</td>
-            <td style={{ ...td, textAlign: 'right', fontWeight: 500, color: '#e2e8f0' }}>free tier</td>
+            <td style={{ ...td, textAlign: 'right', fontWeight: 500, color: '#94a3b8', whiteSpace: 'nowrap' }}>free</td>
           </tr>
           <tr style={{ borderTop: '1px solid #334155' }}>
-            <td style={{ ...td, fontWeight: 600, color: '#e2e8f0' }} colSpan={2}>Total</td>
-            <td style={{ ...td, textAlign: 'right', fontWeight: 600, color: '#e2e8f0' }}>~$10/mo</td>
+            <td style={{ ...td, fontWeight: 600, color: '#e2e8f0' }} colSpan={2}>
+              Current total
+            </td>
+            <td style={{ ...td, textAlign: 'right', fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap' }}>$7.23/mo</td>
+          </tr>
+          <tr>
+            <td style={{ ...td, color: '#64748b', fontSize: 12 }} colSpan={2}>
+              Once Supabase free tier is exhausted
+            </td>
+            <td style={{ ...td, textAlign: 'right', color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>~$32/mo</td>
           </tr>
         </tbody>
       </table>
 
+      <p style={{ fontSize: 12, color: '#475569', marginBottom: 24 }}>
+        * Supabase free tier caps at 500 MB. At ~86,400 rows/day the database will
+        fill in roughly 4–5 months, at which point the project either upgrades to Pro
+        ($25/mo) or begins archiving older data.
+      </p>
+
+      <h3 style={h3}>If there's enough support</h3>
+      <p>
+        If this project gets enough community support, a few improvements become
+        possible:
+      </p>
+      <ul style={{ paddingLeft: 20, color: '#94a3b8', marginBottom: 0 }}>
+        <li style={{ marginBottom: 6 }}>
+          <strong style={{ color: '#cbd5e1' }}>Custom domain</strong> — move from{' '}
+          <code style={code}>pir-sound-tracker.vercel.app</code> to something like{' '}
+          <code style={code}>pirnoise.org</code>. Domain registration runs ~$10–15/year
+          through most registrars; hosting stays free on Vercel.
+        </li>
+        <li style={{ marginBottom: 6 }}>
+          <strong style={{ color: '#cbd5e1' }}>Sustained database</strong> — keep the
+          full historical record online indefinitely rather than archiving or truncating
+          when the free tier fills.
+        </li>
+        <li>
+          <strong style={{ color: '#cbd5e1' }}>More features</strong> — email/SMS alerts
+          for sustained violations, downloadable data exports, comparison across race
+          weekends.
+        </li>
+      </ul>
+
+      <h3 style={h3}>Get in touch</h3>
+      <p style={{ marginBottom: 12 }}>
+        Found a bug, have a feature idea, or just want to say something? Choose
+        whatever's easiest:
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <a
+          href="https://github.com/thehimmat/pir-sound-tracker/issues/new?labels=bug&template=bug_report.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={contactBtn('#1e293b', '#38bdf8')}
+        >
+          <span style={{ fontSize: 16, marginRight: 10 }}>🐛</span>
+          Report a bug on GitHub
+        </a>
+        <a
+          href="https://github.com/thehimmat/pir-sound-tracker/issues/new?labels=enhancement"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={contactBtn('#1e293b', '#a78bfa')}
+        >
+          <span style={{ fontSize: 16, marginRight: 10 }}>💡</span>
+          Request a feature on GitHub
+        </a>
+        <a
+          href="mailto:himmatsinghkhalsa@gmail.com?subject=PIR%20Noise%20Monitor"
+          style={contactBtn('#1e293b', '#94a3b8')}
+        >
+          <span style={{ fontSize: 16, marginRight: 10 }}>✉️</span>
+          Send a message by email
+        </a>
+      </div>
+
       <h3 style={h3}>About this project</h3>
       <p>
         Built and maintained by{' '}
-        <a
-          href="https://github.com/thehimmat"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={link}
-        >
+        <a href="https://github.com/thehimmat" target="_blank" rel="noopener noreferrer" style={link}>
           Himmat Singh Khalsa
         </a>
         {' '}as an independent community resource — no affiliation with Portland
@@ -100,6 +178,21 @@ const kofiBtn: React.CSSProperties = {
   marginBottom: 32,
 };
 
+function contactBtn(bg: string, accent: string): React.CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '10px 16px',
+    borderRadius: 8,
+    background: bg,
+    border: `1px solid #334155`,
+    color: accent,
+    fontWeight: 500,
+    fontSize: 13,
+    textDecoration: 'none',
+  };
+}
+
 const th: React.CSSProperties = {
   textAlign: 'left',
   padding: '6px 12px',
@@ -122,7 +215,7 @@ const h3: React.CSSProperties = {
   fontWeight: 600,
   color: '#94a3b8',
   marginTop: 32,
-  marginBottom: 6,
+  marginBottom: 8,
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
 };
@@ -130,4 +223,12 @@ const h3: React.CSSProperties = {
 const link: React.CSSProperties = {
   color: '#3b82f6',
   textDecoration: 'none',
+};
+
+const code: React.CSSProperties = {
+  background: '#1e293b',
+  padding: '1px 5px',
+  borderRadius: 3,
+  fontSize: 12,
+  fontFamily: 'monospace',
 };
