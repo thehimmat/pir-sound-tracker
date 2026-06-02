@@ -28,6 +28,10 @@ let consecutiveFailStatus: ReadingStatus | null = null;
 // Running totals for periodic stats
 let statOk = 0;
 let statFail = 0;
+let statTotalFetchMs = 0;
+let statTotalPreprocessMs = 0;
+let statTotalOcrMs = 0;
+let statOcrCount = 0;
 let statIntervalHandle: ReturnType<typeof setInterval>;
 
 const FETCH_TIMEOUT_MS = 10_000;
@@ -52,6 +56,9 @@ async function poll(): Promise<void> {
   let raw_db: number | null = null;
   let status: ReadingStatus = 'ok';
 
+  // Per-phase timing (ms). Populated for the phases that actually run.
+  let tFetch = 0, tPreprocess = 0, tOcr = 0;
+
   try {
     if (config.mockMode) {
       raw_db = nextMockReading();
@@ -60,7 +67,9 @@ async function poll(): Promise<void> {
       // 1. Fetch
       let imgBuf: Buffer;
       try {
+        const t0 = Date.now();
         imgBuf = await fetchImageBuffer();
+        tFetch = Date.now() - t0;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`[poller] fetch error: ${msg}`);
@@ -85,8 +94,13 @@ async function poll(): Promise<void> {
 
           if (status === 'ok') {
             // 4 & 5. Preprocess + OCR
+            const t1 = Date.now();
             const processed = await preprocessImage(imgBuf!);
+            tPreprocess = Date.now() - t1;
+
+            const t2 = Date.now();
             const { text: ocrText, confidence } = await ocrImage(processed);
+            tOcr = Date.now() - t2;
 
             // 6. Parse
             const parsed = parseDbReading(ocrText);
@@ -127,18 +141,27 @@ async function poll(): Promise<void> {
     statOk++;
   }
 
+  // Accumulate timing stats
+  if (tFetch)     { statTotalFetchMs     += tFetch; }
+  if (tPreprocess){ statTotalPreprocessMs += tPreprocess; }
+  if (tOcr)       { statTotalOcrMs += tOcr; statOcrCount++; }
+
   // Health and broadcast are synchronous — never blocked by DB latency
   recordPoll(ts, status === 'ok');
   const msg: WsMessage = { ts, raw_db, status };
   broadcast(msg);
 
+  const timingStr = tFetch || tPreprocess || tOcr
+    ? ` (fetch=${tFetch}ms pre=${tPreprocess}ms ocr=${tOcr}ms)`
+    : '';
+
   if (status !== 'ok') {
     // Only log first occurrence + escalation points (handled above) to avoid log spam
     if (consecutiveFailCount === 1) {
-      console.log(`[poller] ${new Date(ts).toISOString()} status=${status}`);
+      console.log(`[poller] ${new Date(ts).toISOString()} status=${status}${timingStr}`);
     }
   } else {
-    console.log(`[poller] ${new Date(ts).toISOString()} db=${raw_db} dB`);
+    console.log(`[poller] ${new Date(ts).toISOString()} db=${raw_db} dB${timingStr}`);
   }
 
   // DB write is fire-and-forget — never blocks the poll loop
@@ -171,9 +194,17 @@ async function run(): Promise<void> {
   statIntervalHandle = setInterval(() => {
     const total = statOk + statFail;
     const mem = process.memoryUsage();
-    console.log(`[poller] 5-min stats — ok=${statOk} fail=${statFail} total=${total} (${total > 0 ? Math.round(statOk / total * 100) : 0}% ok) | rss=${Math.round(mem.rss / 1024 / 1024)}MB heap=${Math.round(mem.heapUsed / 1024 / 1024)}MB`);
-    statOk = 0;
-    statFail = 0;
+    const avgFetch     = total      > 0 ? Math.round(statTotalFetchMs / total)         : 0;
+    const avgPreprocess= total      > 0 ? Math.round(statTotalPreprocessMs / total)    : 0;
+    const avgOcr       = statOcrCount > 0 ? Math.round(statTotalOcrMs / statOcrCount)  : 0;
+    console.log(
+      `[poller] 5-min stats — ok=${statOk} fail=${statFail} total=${total}` +
+      ` (${total > 0 ? Math.round(statOk / total * 100) : 0}% ok)` +
+      ` | avg fetch=${avgFetch}ms pre=${avgPreprocess}ms ocr=${avgOcr}ms` +
+      ` | rss=${Math.round(mem.rss / 1024 / 1024)}MB heap=${Math.round(mem.heapUsed / 1024 / 1024)}MB`
+    );
+    statOk = statFail = 0;
+    statTotalFetchMs = statTotalPreprocessMs = statTotalOcrMs = statOcrCount = 0;
   }, 5 * 60 * 1000);
 
   // Sequential poll loop: wait for each poll to complete before scheduling the next.

@@ -191,6 +191,25 @@ Also hardened `ocr.ts`: non-timeout worker errors now terminate and null the wor
 so the next poll gets a fresh one, rather than reusing a potentially corrupted
 worker state.
 
+**Follow-up research (June 2026):** Investigated whether the sequential loop would
+reduce DB write frequency below 1/second. Key findings:
+
+- Source image is **240×320 px** (tiny PNG, ~6.8KB). After crop (46% top, 28%
+  height) and 4x upscale, preprocessed image is **960×360px** — much smaller than
+  originally estimated.
+- Locally (Apple Silicon), LSTM OCR on this image takes **~25ms** per call after
+  worker initialization. Even at 10× slower on Fly's shared AMD EPYC, that's
+  ~250ms, giving total poll times of ~400–800ms — well under 1s.
+- Legacy OCR (OEM 0) was considered but cannot be used: the baked `eng.traineddata`
+  only contains the LSTM model. The legacy engine components are absent.
+- **Conclusion:** the sequential loop is expected to maintain ~1s cadence in normal
+  operation. The risk scenario is an occasional slow fetch or Tesseract spike
+  causing one poll to run long — but nothing cascades since polls are sequential.
+
+**Added (June 2026):** Per-phase timing (`fetch=Xms pre=Xms ocr=Xms`) is now logged
+on every poll line and averaged in the 5-minute stats, so actual Fly performance is
+visible in logs and can be compared against these estimates.
+
 ---
 
 ## Current configuration (as of June 2026)
