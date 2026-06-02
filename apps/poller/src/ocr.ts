@@ -1,10 +1,8 @@
 import { spawn } from 'node:child_process';
 
 // Tesseract CLI reads from stdin when given 'stdin' as the input path.
-// TESSDATA_PREFIX is set in the Dockerfile to /app/tessdata.
-// Locally it falls back to the project root where eng.traineddata lives.
-const TESSDATA_PREFIX = process.env.TESSDATA_DIR
-  ?? new URL('../../..', import.meta.url).pathname;  // …/apps/poller → monorepo root
+// TESSDATA_PREFIX is set in the Dockerfile ENV to /app/tessdata.
+// Locally, the system Tesseract installation handles its own tessdata lookup.
 
 const OCR_TIMEOUT_MS = 10_000;
 
@@ -18,7 +16,7 @@ export async function ocrImage(imageBuffer: Buffer): Promise<{ text: string; con
         '--oem', '1',          // LSTM engine
         '-c', 'tessedit_char_whitelist=0123456789.',
       ],
-      { env: { ...process.env, TESSDATA_PREFIX } },
+      { env: process.env },    // TESSDATA_PREFIX already set by Dockerfile ENV
     );
 
     const timer = setTimeout(() => {
