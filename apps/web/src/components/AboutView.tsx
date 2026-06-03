@@ -139,6 +139,15 @@ export function AboutView() {
         >
           Himmat Singh Khalsa
         </a>
+        . Source code is available on{' '}
+        <a
+          href="https://github.com/thehimmat/pir-sound-tracker"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#3b82f6', textDecoration: 'none' }}
+        >
+          GitHub
+        </a>
         .
       </p>
     </div>
