@@ -5,6 +5,16 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undef
 
 type State = 'unsupported' | 'checking' | 'off' | 'subscribing' | 'on' | 'error';
 
+/** Convert URL-safe base64 string to Uint8Array — required by some browsers. */
+function vapidKeyToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+  const raw = atob(base64.replace(/-/g, '+').replace(/_/g, '/') + padding);
+  const buf = new ArrayBuffer(raw.length);
+  const arr = new Uint8Array(buf);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
 async function getCurrentSubscription(): Promise<PushSubscription | null> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
   const reg = await navigator.serviceWorker.getRegistration('/sw.js');
@@ -37,7 +47,7 @@ export function NotifyButton() {
       await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: VAPID_PUBLIC_KEY,
+        applicationServerKey: vapidKeyToUint8Array(VAPID_PUBLIC_KEY),
       });
       const { endpoint, keys } = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
       const res = await fetch('/api/subscriptions', {
@@ -48,8 +58,13 @@ export function NotifyButton() {
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       setState('on');
     } catch (err) {
-      console.error('[notify] subscribe failed:', err);
-      setState(Notification.permission === 'denied' ? 'unsupported' : 'error');
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[notify] subscribe failed:', msg);
+      if (Notification.permission === 'denied') {
+        setState('unsupported');
+      } else {
+        setState('error');
+      }
     }
   }
 
@@ -71,7 +86,15 @@ export function NotifyButton() {
     }
   }
 
-  if (state === 'unsupported' || state === 'checking') return null;
+  if (state === 'unsupported') {
+    return (
+      <span style={{ fontSize: 12, color: '#475569' }} title="Notifications blocked or not supported — check browser settings">
+        Alerts unavailable
+      </span>
+    );
+  }
+
+  if (state === 'checking') return null;
 
   if (state === 'on') {
     return (
