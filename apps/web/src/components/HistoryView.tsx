@@ -17,6 +17,13 @@ export function HistoryView() {
 
   return (
     <div>
+      {selectedDate && (
+        <div style={{ marginBottom: 28, borderBottom: '1px solid #1e293b', paddingBottom: 20 }}>
+          <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 12 }}>{selectedDate}</div>
+          <DayView date={selectedDate} />
+        </div>
+      )}
+
       <table style={tableStyle}>
         <thead>
           <tr>
@@ -52,13 +59,6 @@ export function HistoryView() {
           ))}
         </tbody>
       </table>
-
-      {selectedDate && (
-        <div style={{ marginTop: 28, borderTop: '1px solid #1e293b', paddingTop: 20 }}>
-          <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 12 }}>{selectedDate}</div>
-          <DayView date={selectedDate} />
-        </div>
-      )}
     </div>
   );
 }

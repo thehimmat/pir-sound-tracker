@@ -84,7 +84,7 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 10
       <BarChart
         data={chartData}
         margin={{ top: 8, right: 20, bottom: 0, left: 0 }}
-        barCategoryGap="20%"
+        barCategoryGap="5%"
         onClick={(e) => {
           const b = e?.activePayload?.[0]?.payload as DayBlock | undefined;
           if (b && b.high_db !== null) onBlockClick(b.bucket_start);
@@ -110,10 +110,10 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 10
         <ReferenceLine y={limitDb} stroke="#ef4444" strokeDasharray="6 3" label={{ value: `${limitDb} dB`, fill: '#ef4444', fontSize: 10, position: 'insideTopRight' }} />
 
         {/* Ghost bar — transparent, full-height on null slots so they remain hoverable */}
-        <Bar dataKey="_ghost" maxBarSize={4} fill="rgba(0,0,0,0)" isAnimationActive={false} style={{ pointerEvents: 'none' }} />
+        <Bar dataKey="_ghost" maxBarSize={10} fill="rgba(0,0,0,0)" isAnimationActive={false} style={{ pointerEvents: 'none' }} />
 
         {/* Real data bar */}
-        <Bar dataKey="high_db" maxBarSize={4} radius={[1, 1, 0, 0]} isAnimationActive={false} style={{ cursor: 'pointer' }}>
+        <Bar dataKey="high_db" maxBarSize={10} radius={[1, 1, 0, 0]} isAnimationActive={false} style={{ cursor: 'pointer' }}>
           {blocks.map(b => (
             <Cell
               key={b.bucket_start}
