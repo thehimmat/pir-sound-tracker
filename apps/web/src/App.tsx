@@ -4,14 +4,14 @@ import { TodayView } from './components/TodayView.js';
 import { HistoryView } from './components/HistoryView.js';
 import { AboutView } from './components/AboutView.js';
 import { SupportView } from './components/SupportView.js';
+import { NotifyButton } from './components/NotifyButton.js';
 
 type Tab = 'live' | 'today' | 'history' | 'about' | 'support';
 
-const TABS: { id: Tab; label: string }[] = [
+const NAV_TABS: { id: Tab; label: string }[] = [
   { id: 'live',    label: 'Live' },
   { id: 'today',   label: 'Today' },
   { id: 'history', label: 'History' },
-  { id: 'about',   label: 'About' },
 ];
 
 export default function App() {
@@ -24,33 +24,32 @@ export default function App() {
           <h1 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0', marginBottom: 16 }}>
             Portland International Raceway — Noise Monitor
           </h1>
-          <nav style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            {TABS.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={tabStyle(tab === t.id)}
+          <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Left: page tabs */}
+            <div style={{ display: 'flex', gap: 4 }}>
+              {NAV_TABS.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  style={tabStyle(tab === t.id)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Right: notify + report */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <NotifyButton />
+              <a
+                href="https://www.portland.gov/ppd/noise/noise-concerns"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={reportBtnStyle}
               >
-                {t.label}
-              </button>
-            ))}
-            <a
-              href="https://www.portland.gov/ppd/noise/noise-concerns"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '6px 18px',
-                borderRadius: 6,
-                fontSize: 13,
-                fontWeight: 500,
-                background: '#7f1d1d',
-                color: '#fca5a5',
-                textDecoration: 'none',
-                marginLeft: 8,
-              }}
-            >
-              File noise complaint ↗
-            </a>
+                Report noise
+              </a>
+            </div>
           </nav>
         </header>
 
@@ -96,6 +95,19 @@ function tabStyle(active: boolean): React.CSSProperties {
     transition: 'background 0.15s',
   };
 }
+
+const reportBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '6px 14px',
+  borderRadius: 6,
+  fontSize: 13,
+  fontWeight: 500,
+  background: '#7f1d1d',
+  color: '#fca5a5',
+  textDecoration: 'none',
+  border: '1px solid #991b1b',
+};
 
 const footerStyle: React.CSSProperties = {
   marginTop: 48,

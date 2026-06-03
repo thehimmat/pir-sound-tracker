@@ -3,7 +3,6 @@ import type { Reading, WsMessage } from '@pir/types';
 import { useRealtimeReadings } from '../hooks/useRealtimeReadings.js';
 import { useApi } from '../hooks/useApi.js';
 import { DbDisplay } from './DbDisplay.js';
-import { NotifyButton } from './NotifyButton.js';
 import { ReadingsChart } from './ReadingsChart.js';
 import { SummaryBar } from './SummaryBar.js';
 import { getLimitForDate, getEventForDate } from '../utils/varianceEvents.js';
@@ -116,7 +115,6 @@ export function LiveView() {
         </div>
       )}
       <DbDisplay value={latest?.raw_db ?? null} status={latest?.status ?? null} limitDb={limitDb} />
-      <NotifyButton />
       <SummaryBar readings={allReadings} limitDb={limitDb} />
       {hourReadings === null ? (
         <ChartPlaceholder

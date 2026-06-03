@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Bell, BellOff } from 'lucide-react';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
 type State = 'unsupported' | 'checking' | 'off' | 'subscribing' | 'on' | 'error';
-
 
 async function getCurrentSubscription(): Promise<PushSubscription | null> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
@@ -12,6 +12,10 @@ async function getCurrentSubscription(): Promise<PushSubscription | null> {
   return reg.pushManager.getSubscription();
 }
 
+/**
+ * Renders as a nav-bar button — no wrapper element, caller places it inline.
+ * Returns null when push notifications are unsupported or still checking.
+ */
 export function NotifyButton() {
   const [state, setState] = useState<State>('checking');
 
@@ -20,9 +24,9 @@ export function NotifyButton() {
       setState('unsupported');
       return;
     }
-    getCurrentSubscription().then(sub => {
-      setState(sub ? 'on' : 'off');
-    }).catch(() => setState('off'));
+    getCurrentSubscription()
+      .then(sub => setState(sub ? 'on' : 'off'))
+      .catch(() => setState('off'));
   }, []);
 
   async function subscribe() {
@@ -45,7 +49,6 @@ export function NotifyButton() {
       setState('on');
     } catch (err) {
       console.error('[notify] subscribe failed:', err);
-      // If user denied permission the browser won't ask again — show generic error
       setState(Notification.permission === 'denied' ? 'unsupported' : 'error');
     }
   }
@@ -72,55 +75,43 @@ export function NotifyButton() {
 
   if (state === 'on') {
     return (
-      <div style={wrapStyle}>
-        <span style={{ color: '#4ade80', fontSize: 12 }}>
-          🔔 Violation alerts on
-        </span>
-        {' '}
-        <button onClick={unsubscribe} style={mutedBtn}>turn off</button>
-      </div>
+      <button
+        onClick={unsubscribe}
+        style={btnStyle(true)}
+        title="Violation alerts enabled — click to turn off"
+      >
+        <Bell size={13} style={{ flexShrink: 0 }} />
+        Alerts on
+      </button>
     );
   }
 
   return (
-    <div style={wrapStyle}>
-      <button
-        onClick={subscribe}
-        disabled={state === 'subscribing'}
-        style={notifyBtn(state === 'subscribing')}
-        title="Get a browser notification when PIR exceeds the noise limit for 60+ seconds"
-      >
-        🔔 {state === 'subscribing' ? 'Enabling…' : state === 'error' ? 'Try again' : 'Notify me of violations'}
-      </button>
-    </div>
+    <button
+      onClick={subscribe}
+      disabled={state === 'subscribing'}
+      style={btnStyle(false)}
+      title="Get a browser notification when PIR exceeds the noise limit for 60+ seconds"
+    >
+      <BellOff size={13} style={{ flexShrink: 0 }} />
+      {state === 'subscribing' ? 'Enabling…' : state === 'error' ? 'Retry alerts' : 'Notify me'}
+    </button>
   );
 }
 
-const wrapStyle: React.CSSProperties = {
-  marginTop: 8,
-  marginBottom: 4,
-  textAlign: 'center',
-  fontSize: 12,
-};
-
-function notifyBtn(disabled: boolean): React.CSSProperties {
+function btnStyle(active: boolean): React.CSSProperties {
   return {
-    background: 'none',
-    border: '1px solid #334155',
-    color: disabled ? '#475569' : '#64748b',
-    fontSize: 12,
-    padding: '4px 12px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '6px 14px',
     borderRadius: 6,
-    cursor: disabled ? 'default' : 'pointer',
+    border: active ? '1px solid #166534' : '1px solid #334155',
+    background: active ? '#14532d' : '#1e293b',
+    color: active ? '#4ade80' : '#64748b',
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'background 0.15s',
   };
 }
-
-const mutedBtn: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  color: '#475569',
-  fontSize: 12,
-  cursor: 'pointer',
-  padding: 0,
-  textDecoration: 'underline',
-};
