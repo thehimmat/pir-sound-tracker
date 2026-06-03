@@ -8,12 +8,15 @@
   "scripts": {
     "dev": "concurrently --names poller,api,web --prefix-colors cyan,yellow,magenta \"npm run dev --workspace=apps/poller\" \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "dev:poller": "npm run dev --workspace=apps/poller",
-    "dev:api":    "npm run dev --workspace=apps/api",
-    "dev:web":    "npm run dev --workspace=apps/web",
-    "build":      "npm run build --workspaces --if-present",
-    "test":       "npm run test --workspaces --if-present"
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
   }
 }

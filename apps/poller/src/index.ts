@@ -15,6 +15,8 @@ import { broadcast, startWsServer } from './wsServer.js';
 import { startHealthServer, recordPoll, getPollAgeMs } from './healthServer.js';
 import { insertReading } from '@pir/db';
 import type { ReadingStatus, WsMessage } from '@pir/types';
+import { getLimitForDate } from '@pir/types';
+import { sendViolationAlert } from './notify.js';
 
 startWsServer(config.wsPort);
 
@@ -24,6 +26,12 @@ let staleFirstTs: number | null = null;
 // Consecutive non-ok tracking for escalated logging
 let consecutiveFailCount = 0;
 let consecutiveFailStatus: ReadingStatus | null = null;
+
+// Violation alert tracking
+const VIOLATION_SUSTAINED_MS = 60_000;   // alert after 60s above limit
+const REALERT_MS              = 30 * 60_000; // re-alert if still violating after 30 min
+let violationStartTs: number | null = null;
+let lastAlertTs: number | null = null;
 
 // Running totals for periodic stats
 let statOk = 0;
@@ -168,6 +176,27 @@ async function poll(): Promise<void> {
   insertReading(ts, raw_db, status).catch(err => {
     console.error('[poller] supabase write error:', err instanceof Error ? err.message : err);
   });
+
+  // Violation alert: fire after 60s of sustained readings above the day's limit
+  if (status === 'ok' && raw_db !== null) {
+    const dateStr = new Date(ts).toISOString().slice(0, 10);
+    const limitDb = getLimitForDate(dateStr);
+    if (raw_db >= limitDb) {
+      if (violationStartTs === null) violationStartTs = ts;
+      const sustainedMs = ts - violationStartTs;
+      const sinceLastAlert = lastAlertTs === null ? Infinity : ts - lastAlertTs;
+      if (sustainedMs >= VIOLATION_SUSTAINED_MS && sinceLastAlert >= REALERT_MS) {
+        lastAlertTs = ts;
+        sendViolationAlert(raw_db, limitDb).catch(err => {
+          console.error('[notify] alert error:', err instanceof Error ? err.message : err);
+        });
+      }
+    } else {
+      violationStartTs = null; // reading back below limit — reset sustained timer
+    }
+  } else if (status !== 'ok') {
+    violationStartTs = null;
+  }
 }
 
 async function run(): Promise<void> {

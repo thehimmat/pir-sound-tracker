@@ -110,6 +110,15 @@ export function SupportView() {
         </li>
       </ul>
 
+      <h3 style={h3}>Violation alerts</h3>
+      <p>
+        Subscribe to the{' '}
+        <a href="/api/feed.xml" style={link}>RSS feed</a>
+        {' '}for violation alerts in any RSS reader (Feedly, NetNewsWire, etc.).
+        On the <strong style={{ color: '#cbd5e1' }}>Live</strong> view you can
+        also enable browser push notifications — one click, no sign-up.
+      </p>
+
       <h3 style={h3}>Get in touch</h3>
       <p style={{ marginBottom: 12 }}>
         Found a bug, have a feature idea, or just want to say something? Choose

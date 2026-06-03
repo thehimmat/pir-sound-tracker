@@ -1,3 +1,6 @@
+// Variance events are also defined in packages/types/src/index.ts for use by
+// the poller. Keep both in sync when updating for a new season.
+
 export interface VarianceEvent {
   name: string;
   dates: string[];   // YYYY-MM-DD
