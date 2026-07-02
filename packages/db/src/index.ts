@@ -8,7 +8,10 @@ let _client: SupabaseClient | null = null;
 export function getClient(): SupabaseClient {
   if (_client) return _client;
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY;
+  // Prefer the service-role key on trusted server runtimes (poller, API functions)
+  // so RLS can lock the anon role out of writes. Falls back to the anon key.
+  // This module is server-only and never bundled into the web client.
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY env vars are required');
   _client = createClient(url, key);
   return _client;
