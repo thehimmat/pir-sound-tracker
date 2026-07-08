@@ -1,16 +1,29 @@
 import type { Reading } from '@pir/types';
+import { classifyReading } from '../utils/varianceEvents.js';
 
 interface Props {
   readings: Reading[];
-  limitDb?: number;
 }
 
-export function SummaryBar({ readings, limitDb = 103 }: Props) {
+export function SummaryBar({ readings }: Props) {
   const valid = readings.filter(r => r.status === 'ok' && r.raw_db !== null);
-  const highDb = valid.length > 0
-    ? Math.max(...valid.map(r => r.raw_db as number))
-    : null;
-  const violations = valid.filter(r => (r.raw_db as number) >= limitDb).length;
+
+  let highDb: number | null = null;
+  let highTs = 0;
+  let loud = 0;
+  let over = 0;
+  for (const r of valid) {
+    const db = r.raw_db as number;
+    if (highDb === null || db > highDb) { highDb = db; highTs = r.ts; }
+    const s = classifyReading(db, r.ts);
+    if (s === 'over_limit_report') over++;
+    else if (s === 'loud_document') loud++;
+  }
+
+  const highStatus = highDb !== null ? classifyReading(highDb, highTs) : null;
+  const highColor = highStatus === 'over_limit_report' ? '#ef4444'
+    : highStatus === 'loud_document' ? '#f59e0b'
+    : '#e2e8f0';
 
   return (
     <div style={{
@@ -25,14 +38,20 @@ export function SummaryBar({ readings, limitDb = 103 }: Props) {
     }}>
       <span>
         High:{' '}
-        <strong style={{ color: highDb !== null && highDb >= limitDb ? '#ef4444' : '#e2e8f0' }}>
+        <strong style={{ color: highColor }}>
           {highDb !== null ? `${highDb.toFixed(1)} dB` : '—'}
         </strong>
       </span>
       <span>
-        Violations:{' '}
-        <strong style={{ color: violations > 0 ? '#ef4444' : '#e2e8f0' }}>
-          {violations}
+        Loud:{' '}
+        <strong style={{ color: loud > 0 ? '#f59e0b' : '#e2e8f0' }}>
+          {loud}
+        </strong>
+      </span>
+      <span>
+        Over limit:{' '}
+        <strong style={{ color: over > 0 ? '#ef4444' : '#e2e8f0' }}>
+          {over}
         </strong>
       </span>
     </div>

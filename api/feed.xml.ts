@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { getLimitForDate } from '@pir/types';
+import { getActiveLimit } from '@pir/types';
 
 const SITE_URL = 'https://pir-sound-tracker.vercel.app';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -47,8 +47,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
   let prevAbove = false;
 
   for (const row of rows) {
-    const dateStr  = new Date(row.ts).toISOString().slice(0, 10);
-    const limitDb  = getLimitForDate(dateStr);
+    const limitDb  = getActiveLimit(row.ts);
     const isAbove  = row.raw_db >= limitDb;
     if (isAbove && !prevAbove) {
       events.push({ ts: row.ts, raw_db: row.raw_db, limitDb });

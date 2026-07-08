@@ -1,8 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-// Use service role key so we can read/write subscriptions regardless of RLS,
-// but the table itself has no PII so this is safe.
+// Use the service-role key so we can read/write subscriptions regardless of RLS.
+// The rows hold Web Push credentials (endpoint/p256dh/auth), which are sensitive:
+// RLS must keep the anon role out, so this path requires the service-role key.
 function getServiceClient() {
   const url = process.env.SUPABASE_URL!;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_ANON_KEY!;

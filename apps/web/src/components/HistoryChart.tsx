@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   BarChart,
   Bar,
@@ -11,6 +10,7 @@ import {
   Cell,
 } from 'recharts';
 import type { DailySummary } from '@pir/types';
+import { getLimitForDate, DEFAULT_LIMIT_DB } from '../utils/varianceEvents.js';
 
 interface Props {
   summaries: DailySummary[];
@@ -18,10 +18,12 @@ interface Props {
 }
 
 export function HistoryChart({ summaries, onDayClick }: Props) {
+  // Cells render in data order, so build them from the same reversed array
+  const data = [...summaries].reverse();
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart
-        data={[...summaries].reverse()}
+        data={data}
         margin={{ top: 8, right: 16, bottom: 0, left: 0 }}
         onClick={(e) => {
           if (e?.activeLabel) onDayClick(e.activeLabel as string);
@@ -37,12 +39,12 @@ export function HistoryChart({ summaries, onDayClick }: Props) {
           itemStyle={{ color: '#22c55e' }}
           formatter={(v: number) => [`${v.toFixed(1)} dB`, 'High']}
         />
-        <ReferenceLine y={103} stroke="#ef4444" strokeDasharray="6 3" />
+        <ReferenceLine y={DEFAULT_LIMIT_DB} stroke="#ef4444" strokeDasharray="6 3" />
         <Bar dataKey="high_db" radius={[3, 3, 0, 0]}>
-          {summaries.map(s => (
+          {data.map(s => (
             <Cell
               key={s.date}
-              fill={s.high_db !== null && s.high_db >= 103 ? '#ef4444' : '#22c55e'}
+              fill={s.high_db !== null && s.high_db >= getLimitForDate(s.date) ? '#ef4444' : '#22c55e'}
             />
           ))}
         </Bar>
