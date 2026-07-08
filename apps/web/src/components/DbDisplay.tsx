@@ -31,8 +31,17 @@ export function DbDisplay({ value, status, noiseStatus }: Props) {
 
   const waiting = value === null && status === null;
 
+  // Single flattened description for screen readers; the visual children are
+  // decorative once this label exists. Not a live region: it updates every
+  // second and announcing each tick would be unusable.
+  const srLabel = waiting
+    ? 'Waiting for the first reading'
+    : readFailLabel
+      ? `Reading unavailable: ${readFailLabel}`
+      : `Current reading ${value?.toFixed(1)} decibels, ${noiseStatus ? NOISE_STATUS_LABELS[noiseStatus] : 'unclassified'}`;
+
   return (
-    <div style={{ textAlign: 'center', padding: '10px 0 14px' }}>
+    <div role="img" aria-label={srLabel} style={{ textAlign: 'center', padding: '10px 0 14px' }}>
       <div style={{
         fontSize: 96,
         fontWeight: 700,

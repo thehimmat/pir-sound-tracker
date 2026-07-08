@@ -58,7 +58,7 @@ function BlockTooltip({ active, payload, label }: TooltipProps<number, string>) 
       <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 4 }}>{timeStr}</div>
       {block.high_db !== null
         ? <span style={{ color: '#22c55e' }}>{block.high_db.toFixed(1)} dB peak</span>
-        : <span style={{ color: '#64748b', fontStyle: 'italic' }}>{gapReason(block)}</span>
+        : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>{gapReason(block)}</span>
       }
     </div>
   );
@@ -69,7 +69,7 @@ type ChartBlock = DayBlock & { _ghost?: number };
 
 export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 103 }: Props) {
   if (blocks.length === 0) {
-    return <div style={{ color: '#64748b', textAlign: 'center', padding: 40 }}>No data for this day.</div>;
+    return <div style={{ color: '#94a3b8', textAlign: 'center', padding: 40 }}>No data for this day.</div>;
   }
 
   // Add a transparent full-height ghost bar on null slots so the cursor always
@@ -80,6 +80,13 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 10
   }));
 
   return (
+    // role="img" flattens recharts' SVG internals for screen readers. Bars are
+    // mouse-only; the "jump to time" form below is the keyboard route to the
+    // same drill-down.
+    <div
+      role="img"
+      aria-label={`Bar chart of peak dB per 10-minute block, ${fmtBucket(blocks[0].bucket_start)} to ${fmtBucket(blocks[blocks.length - 1].bucket_start + 600_000)}, with the ${limitDb} dBA limit marked. Use the jump-to-time field to inspect a specific window.`}
+    >
     <ResponsiveContainer width="100%" height={200}>
       <BarChart
         data={chartData}
@@ -98,11 +105,11 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 10
           domain={['dataMin', 'dataMax']}
           tickFormatter={fmtBucket}
           ticks={blocks.filter((_, i) => i % 6 === 0).map(b => b.bucket_start)}
-          tick={{ fill: '#64748b', fontSize: 11 }}
+          tick={{ fill: '#7c8ba1', fontSize: 11 }}
           tickLine={false}
           padding={{ left: 10, right: 10 }}
         />
-        <YAxis domain={[30, 130]} tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} width={36} />
+        <YAxis domain={[30, 130]} tick={{ fill: '#7c8ba1', fontSize: 11 }} tickLine={false} width={36} />
         <Tooltip
           content={<BlockTooltip />}
           cursor={{ fill: '#ffffff08' }}
@@ -131,5 +138,6 @@ export function BlocksChart({ blocks, selectedBucket, onBlockClick, limitDb = 10
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+    </div>
   );
 }

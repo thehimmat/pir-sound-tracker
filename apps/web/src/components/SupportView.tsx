@@ -1,4 +1,5 @@
 import type React from 'react';
+import { Bug, Lightbulb, Mail } from 'lucide-react';
 
 export function SupportView() {
   return (
@@ -72,15 +73,15 @@ export function SupportView() {
             <td style={{ ...td, textAlign: 'right', fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap' }}>$7.23/mo</td>
           </tr>
           <tr>
-            <td style={{ ...td, color: '#64748b', fontSize: 12 }} colSpan={2}>
+            <td style={{ ...td, color: '#7c8ba1', fontSize: 12 }} colSpan={2}>
               Once Supabase free tier is exhausted
             </td>
-            <td style={{ ...td, textAlign: 'right', color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>~$32/mo</td>
+            <td style={{ ...td, textAlign: 'right', color: '#7c8ba1', fontSize: 12, whiteSpace: 'nowrap' }}>~$32/mo</td>
           </tr>
         </tbody>
       </table>
 
-      <p style={{ fontSize: 12, color: '#475569', marginBottom: 24 }}>
+      <p style={{ fontSize: 12, color: '#7c8ba1', marginBottom: 24 }}>
         * Supabase free tier caps at 500 MB. At ~86,400 rows/day the database will
         fill in roughly 4–5 months, at which point the project either upgrades to Pro
         ($25/mo) or begins archiving older data.
@@ -131,7 +132,7 @@ export function SupportView() {
           rel="noopener noreferrer"
           style={contactBtn('#1e293b', '#38bdf8')}
         >
-          <span style={{ fontSize: 16, marginRight: 10 }}>🐛</span>
+          <Bug size={16} aria-hidden="true" style={{ marginRight: 10, flexShrink: 0 }} />
           Report a bug on GitHub
         </a>
         <a
@@ -140,7 +141,7 @@ export function SupportView() {
           rel="noopener noreferrer"
           style={contactBtn('#1e293b', '#a78bfa')}
         >
-          <span style={{ fontSize: 16, marginRight: 10 }}>💡</span>
+          <Lightbulb size={16} aria-hidden="true" style={{ marginRight: 10, flexShrink: 0 }} />
           Request a feature on GitHub
         </a>
         <a
@@ -149,7 +150,7 @@ export function SupportView() {
           rel="noopener noreferrer"
           style={contactBtn('#1e293b', '#94a3b8')}
         >
-          <span style={{ fontSize: 16, marginRight: 10 }}>✉️</span>
+          <Mail size={16} aria-hidden="true" style={{ marginRight: 10, flexShrink: 0 }} />
           Send a message via Ko-fi
         </a>
       </div>
@@ -202,7 +203,7 @@ const th: React.CSSProperties = {
   textAlign: 'left',
   padding: '6px 12px',
   borderBottom: '1px solid #334155',
-  color: '#64748b',
+  color: '#94a3b8',
   fontWeight: 500,
   fontSize: 12,
   textTransform: 'uppercase',
@@ -226,8 +227,8 @@ const h3: React.CSSProperties = {
 };
 
 const link: React.CSSProperties = {
-  color: '#3b82f6',
-  textDecoration: 'none',
+  color: '#60a5fa',
+  textDecoration: 'underline',
 };
 
 const code: React.CSSProperties = {

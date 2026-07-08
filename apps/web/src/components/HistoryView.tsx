@@ -8,12 +8,12 @@ export function HistoryView() {
   const { data: summaries, loading } = useApi<DailySummary[]>('/api/summary/history');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  if (loading) return <div style={{ color: '#64748b', padding: '40px 0', textAlign: 'center' }}>Loading…</div>;
+  if (loading) return <div style={{ color: '#94a3b8', padding: '40px 0', textAlign: 'center' }}>Loading…</div>;
 
   const rows = summaries ?? [];
 
   if (rows.length === 0) {
-    return <div style={{ color: '#64748b', textAlign: 'center', padding: 40 }}>No historical data yet.</div>;
+    return <div style={{ color: '#94a3b8', textAlign: 'center', padding: 40 }}>No historical data yet.</div>;
   }
 
   return (
@@ -25,6 +25,8 @@ export function HistoryView() {
         </div>
       )}
 
+      {/* Wrapper scrolls horizontally so the table never forces the page wider on phones */}
+      <div style={{ overflowX: 'auto' }}>
       <table style={tableStyle}>
         <thead>
           <tr>
@@ -42,7 +44,17 @@ export function HistoryView() {
               onClick={() => setSelectedDate(s.date === selectedDate ? null : s.date)}
               style={{ cursor: 'pointer', background: selectedDate === s.date ? '#1e293b' : 'transparent' }}
             >
-              <Td>{s.date}</Td>
+              <Td>
+                {/* Real button so the day drill-down is keyboard-reachable */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedDate(s.date === selectedDate ? null : s.date); }}
+                  aria-expanded={selectedDate === s.date}
+                  aria-label={`${s.date}: show day detail`}
+                  style={dateBtnStyle}
+                >
+                  {s.date}
+                </button>
+              </Td>
               <Td style={{ color: s.high_db !== null && s.high_db >= getLimitForDate(s.date) ? '#ef4444' : '#e2e8f0' }}>
                 {s.high_db !== null ? `${s.high_db.toFixed(1)} dB` : '—'}
               </Td>
@@ -51,7 +63,7 @@ export function HistoryView() {
               </Td>
               <Td>{s.reading_count.toLocaleString()}</Td>
               <Td
-                style={{ color: s.error_count > 0 ? '#f59e0b' : '#475569' }}
+                style={{ color: s.error_count > 0 ? '#f59e0b' : '#7c8ba1' }}
                 title={s.error_count > 0 ? `${s.error_count} seconds where the source display was unreachable or unreadable` : undefined}
               >
                 {s.error_count > 0 ? s.error_count.toLocaleString() : '—'}
@@ -60,6 +72,7 @@ export function HistoryView() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -70,9 +83,20 @@ const tableStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
+const dateBtnStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  color: '#e2e8f0',
+  fontSize: 13,
+  cursor: 'pointer',
+  textDecoration: 'underline',
+  textDecorationColor: '#334155',
+};
+
 function Th({ children, title }: { children: React.ReactNode; title?: string }) {
   return (
-    <th title={title} style={{ textAlign: 'left', padding: '8px 12px', color: '#64748b', borderBottom: '1px solid #1e293b', cursor: title ? 'help' : undefined }}>
+    <th scope="col" title={title} style={{ textAlign: 'left', padding: '8px 12px', color: '#94a3b8', borderBottom: '1px solid #1e293b', cursor: title ? 'help' : undefined, whiteSpace: 'nowrap' }}>
       {children}
     </th>
   );
