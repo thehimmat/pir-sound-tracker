@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { DailySummary } from '@pir/types';
 import { useApi } from '../hooks/useApi.js';
 import { DayView } from './DayView.js';
+import { getLimitForDate } from '../utils/varianceEvents.js';
 
 export function HistoryView() {
   const { data: summaries, loading } = useApi<DailySummary[]>('/api/summary/history');
@@ -42,7 +43,7 @@ export function HistoryView() {
               style={{ cursor: 'pointer', background: selectedDate === s.date ? '#1e293b' : 'transparent' }}
             >
               <Td>{s.date}</Td>
-              <Td style={{ color: s.high_db !== null && s.high_db >= 103 ? '#ef4444' : '#e2e8f0' }}>
+              <Td style={{ color: s.high_db !== null && s.high_db >= getLimitForDate(s.date) ? '#ef4444' : '#e2e8f0' }}>
                 {s.high_db !== null ? `${s.high_db.toFixed(1)} dB` : '—'}
               </Td>
               <Td style={{ color: s.violation_count > 0 ? '#ef4444' : '#e2e8f0' }}>

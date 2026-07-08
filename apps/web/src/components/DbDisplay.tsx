@@ -1,17 +1,18 @@
 import type { ReadingStatus } from '@pir/types';
+import { NOISE_STATUS_LABELS, type NoiseStatus } from '../utils/varianceEvents.js';
 
 interface Props {
   value: number | null;
   status: ReadingStatus | null;
-  limitDb?: number;
+  /** Classification of the current reading; null while waiting or on read failure. */
+  noiseStatus: NoiseStatus | null;
 }
 
-function dbColor(value: number | null, limitDb: number): string {
-  if (value === null) return '#94a3b8';
-  if (value >= limitDb) return '#ef4444';
-  if (value >= limitDb - 13) return '#f59e0b'; // amber within ~13 dB of limit
-  return '#22c55e';
-}
+const NOISE_COLORS: Record<NoiseStatus, string> = {
+  normal: '#22c55e',
+  loud_document: '#f59e0b',
+  over_limit_report: '#ef4444',
+};
 
 const STATUS_LABELS: Record<string, string> = {
   blank:    'BLANK',
@@ -20,9 +21,13 @@ const STATUS_LABELS: Record<string, string> = {
   ocr_fail: 'OCR FAIL',
 };
 
-export function DbDisplay({ value, status, limitDb = 103 }: Props) {
-  const color = dbColor(value, limitDb);
-  const label = status && status !== 'ok' ? STATUS_LABELS[status] ?? status.toUpperCase() : null;
+export function DbDisplay({ value, status, noiseStatus }: Props) {
+  const color = value === null || noiseStatus === null ? '#94a3b8' : NOISE_COLORS[noiseStatus];
+  const readFailLabel = status && status !== 'ok' ? STATUS_LABELS[status] ?? status.toUpperCase() : null;
+  const noiseLabel = !readFailLabel && value !== null && noiseStatus !== null
+    ? NOISE_STATUS_LABELS[noiseStatus]
+    : null;
+  const label = readFailLabel ?? noiseLabel;
 
   const waiting = value === null && status === null;
 
@@ -45,7 +50,7 @@ export function DbDisplay({ value, status, limitDb = 103 }: Props) {
         padding: '4px 14px',
         borderRadius: 6,
         background: '#1e293b',
-        color: '#f59e0b',
+        color: readFailLabel ? '#f59e0b' : color,
         fontSize: 13,
         letterSpacing: 1,
         visibility: label ? 'visible' : 'hidden',

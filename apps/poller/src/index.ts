@@ -15,7 +15,7 @@ import { broadcast, startWsServer } from './wsServer.js';
 import { startHealthServer, recordPoll, getPollAgeMs } from './healthServer.js';
 import { insertReading } from '@pir/db';
 import type { ReadingStatus, WsMessage } from '@pir/types';
-import { getLimitForDate } from '@pir/types';
+import { getActiveLimit } from '@pir/types';
 import { sendViolationAlert } from './notify.js';
 
 startWsServer(config.wsPort);
@@ -177,10 +177,10 @@ async function poll(): Promise<void> {
     console.error('[poller] supabase write error:', err instanceof Error ? err.message : err);
   });
 
-  // Violation alert: fire after 60s of sustained readings above the day's limit
+  // Violation alert: fire after 60s of sustained readings above the active
+  // limit (variance events, Monday and after-hours 90 dBA, track-local time)
   if (status === 'ok' && raw_db !== null) {
-    const dateStr = new Date(ts).toISOString().slice(0, 10);
-    const limitDb = getLimitForDate(dateStr);
+    const limitDb = getActiveLimit(ts);
     if (raw_db >= limitDb) {
       if (violationStartTs === null) violationStartTs = ts;
       const sustainedMs = ts - violationStartTs;

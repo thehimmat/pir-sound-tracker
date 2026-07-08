@@ -3,7 +3,7 @@ import type { DayBlock, Reading } from '@pir/types';
 import { BlocksChart } from './BlocksChart.js';
 import { ReadingsChart } from './ReadingsChart.js';
 import { SummaryBar } from './SummaryBar.js';
-import { getLimitForDate, getEventForDate } from '../utils/varianceEvents.js';
+import { getLimitForDate, getEventForDate, getActiveLimit } from '../utils/varianceEvents.js';
 
 const TEN_MIN       = 10 * 60 * 1000;
 const REFRESH_MS    = 2 * 60 * 1000; // re-fetch blocks every 2 min when viewing today
@@ -163,8 +163,8 @@ export function DayView({ date }: Props) {
             <div style={{ color: '#64748b', textAlign: 'center', padding: 24 }}>Loading…</div>
           ) : (
             <>
-              <SummaryBar readings={windowReadings} limitDb={limitDb} />
-              <ReadingsChart readings={windowReadings} tickIntervalMs={60_000} limitDb={limitDb} />
+              <SummaryBar readings={windowReadings} />
+              <ReadingsChart readings={windowReadings} tickIntervalMs={60_000} limitDb={getActiveLimit(selectedBucket)} />
             </>
           )}
         </div>

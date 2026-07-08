@@ -5,7 +5,7 @@ import { useApi } from '../hooks/useApi.js';
 import { DbDisplay } from './DbDisplay.js';
 import { ReadingsChart } from './ReadingsChart.js';
 import { SummaryBar } from './SummaryBar.js';
-import { getLimitForDate, getEventForDate } from '../utils/varianceEvents.js';
+import { getActiveLimit, getEventForDate, getTrackDateStr, classifyReading, type NoiseStatus } from '../utils/varianceEvents.js';
 
 const OFFLINE_THRESHOLD_MS = 10_000;
 const SILENCE_THRESHOLD_MS = 15_000; // no WS message at all → poller offline
@@ -56,9 +56,14 @@ export function LiveView() {
     }
   }, []));
 
-  const today = new Date().toLocaleDateString('sv');
-  const limitDb = getLimitForDate(today);
+  const today = getTrackDateStr(Date.now());
+  const limitDb = getActiveLimit(Date.now());
   const varianceEvent = getEventForDate(today);
+
+  const noiseStatus: NoiseStatus | null =
+    latest && latest.status === 'ok' && latest.raw_db !== null
+      ? classifyReading(latest.raw_db, latest.ts)
+      : null;
 
   const windowEnd   = Date.now();
   const windowStart = windowEnd - 10 * 60 * 1000;
@@ -114,8 +119,8 @@ export function LiveView() {
           </span>
         </div>
       )}
-      <DbDisplay value={latest?.raw_db ?? null} status={latest?.status ?? null} limitDb={limitDb} />
-      <SummaryBar readings={allReadings} limitDb={limitDb} />
+      <DbDisplay value={latest?.raw_db ?? null} status={latest?.status ?? null} noiseStatus={noiseStatus} />
+      <SummaryBar readings={allReadings} />
       {hourReadings === null ? (
         <ChartPlaceholder
           timedOut={historyTimedOut}

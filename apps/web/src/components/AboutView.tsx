@@ -55,10 +55,30 @@ export function AboutView() {
         <strong style={{ color: '#e2e8f0' }}>103 dBA</strong> — sound engineers
         determined this more accurately corresponds to 65 dB at the nearest
         residence. Vehicles exceeding 103 dBA are subject to removal from
-        competition. The red dashed line on charts marks the
-        103 dBA operational limit; readings at or above that level are highlighted
-        in red.
+        competition. On Mondays, and any day outside 9:00 AM–10:00 PM, the
+        limit drops to <strong style={{ color: '#e2e8f0' }}>90 dBA</strong>.
+        The red dashed line on charts marks the limit in effect; readings at
+        or above it are highlighted in red.
       </p>
+      <p>
+        Every reading is classified against the limit in effect at that
+        moment (Portland time):
+      </p>
+      <ul style={{ margin: '0 0 12px', paddingLeft: 20 }}>
+        <li>
+          <strong style={{ color: '#22c55e' }}>Normal</strong> — safely below
+          the active limit.
+        </li>
+        <li>
+          <strong style={{ color: '#f59e0b' }}>Loud — document</strong> —
+          within 3 dB of the active limit (5 dB during quiet hours,
+          10:00 PM–8:00 AM); close enough to be worth saving as evidence.
+        </li>
+        <li>
+          <strong style={{ color: '#ef4444' }}>Over limit — report</strong> —
+          at or above the active limit.
+        </li>
+      </ul>
 
       <h3 style={h3}>2026 variance events</h3>
       <p>
