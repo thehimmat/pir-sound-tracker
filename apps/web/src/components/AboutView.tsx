@@ -22,7 +22,7 @@ export function AboutView() {
           href="http://portlandraceway.com/?/about/noise_information"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: '#3b82f6', textDecoration: 'none' }}
+          style={{ color: '#60a5fa', textDecoration: 'underline' }}
         >
           raceway's website
         </a>. Every second, a server automatically captures a snapshot of that
@@ -45,7 +45,7 @@ export function AboutView() {
           href="https://portlandraceway.com/?/about/noise_information"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: '#3b82f6', textDecoration: 'none' }}
+          style={{ color: '#60a5fa', textDecoration: 'underline' }}
         >
           1989 agreement
         </a>{' '}
@@ -111,7 +111,7 @@ export function AboutView() {
           </tr>
         </tbody>
       </table>
-      <p style={{ fontSize: 12, color: '#475569' }}>
+      <p style={{ fontSize: 12, color: '#7c8ba1' }}>
         On variance event days the threshold line on charts automatically adjusts to
         the permitted limit for that event. A banner is shown on the Live and Today views
         when an event is active.
@@ -135,7 +135,7 @@ export function AboutView() {
           href="https://www.portland.gov/oni/noise-complaints"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: '#3b82f6', textDecoration: 'none' }}
+          style={{ color: '#60a5fa', textDecoration: 'underline' }}
         >
           Report a noise concern — Portland.gov
         </a>
@@ -155,7 +155,7 @@ export function AboutView() {
           href="https://github.com/thehimmat"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: '#3b82f6', textDecoration: 'none' }}
+          style={{ color: '#60a5fa', textDecoration: 'underline' }}
         >
           Himmat Singh Khalsa
         </a>
@@ -164,7 +164,7 @@ export function AboutView() {
           href="https://github.com/thehimmat/pir-sound-tracker"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: '#3b82f6', textDecoration: 'none' }}
+          style={{ color: '#60a5fa', textDecoration: 'underline' }}
         >
           GitHub
         </a>
@@ -178,7 +178,7 @@ const th: React.CSSProperties = {
   textAlign: 'left',
   padding: '6px 12px',
   borderBottom: '1px solid #334155',
-  color: '#64748b',
+  color: '#94a3b8',
   fontWeight: 500,
   fontSize: 12,
   textTransform: 'uppercase',

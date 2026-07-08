@@ -89,7 +89,7 @@ export function LiveView() {
               href="https://portlandraceway.com/?/about/noise_information"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: '#fca5a5', textDecoration: 'underline' }}
+              style={{ color: '#fee2e2', textDecoration: 'underline' }}
             >check PIR's site</a></>
           )}
         </div>
@@ -156,7 +156,7 @@ function ChartPlaceholder({ timedOut, error, onRetry }: PlaceholderProps) {
       )}
       {hasProblem ? (
         <>
-          <div style={{ fontSize: 13, color: '#64748b', zIndex: 1 }}>
+          <div style={{ fontSize: 13, color: '#94a3b8', zIndex: 1 }}>
             {error
               ? `Failed to load history: ${error}`
               : 'Taking longer than expected…'}
@@ -178,7 +178,7 @@ function ChartPlaceholder({ timedOut, error, onRetry }: PlaceholderProps) {
           </button>
         </>
       ) : (
-        <div style={{ fontSize: 13, color: '#475569', zIndex: 1 }}>
+        <div style={{ fontSize: 13, color: '#7c8ba1', zIndex: 1 }}>
           Loading…
         </div>
       )}

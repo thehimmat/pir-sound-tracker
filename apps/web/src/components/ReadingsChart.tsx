@@ -44,6 +44,11 @@ export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN, limitDb = 10
 
   return (
     <>
+    {/* role="img" flattens recharts' SVG internals for screen readers */}
+    <div
+      role="img"
+      aria-label={`Line chart of second-by-second noise readings from ${fmt(xMin)} to ${fmt(xMax)}, with the ${limitDb} dBA limit marked. ${data.length} readings.`}
+    >
     <ResponsiveContainer width="100%" height={240}>
       <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -54,12 +59,12 @@ export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN, limitDb = 10
           domain={[xMin, xMax]}
           ticks={computeTicks(tickIntervalMs, xMin, xMax)}
           tickFormatter={fmt}
-          tick={{ fill: '#64748b', fontSize: 11 }}
+          tick={{ fill: '#7c8ba1', fontSize: 11 }}
           tickLine={false}
         />
         <YAxis
           domain={[30, 130]}
-          tick={{ fill: '#64748b', fontSize: 11 }}
+          tick={{ fill: '#7c8ba1', fontSize: 11 }}
           tickLine={false}
           width={36}
         />
@@ -81,7 +86,8 @@ export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN, limitDb = 10
         />
       </LineChart>
     </ResponsiveContainer>
-    <p style={{ margin: '6px 0 0', fontSize: 11, color: '#475569' }}>
+    </div>
+    <p style={{ margin: '6px 0 0', fontSize: 11, color: '#7c8ba1' }}>
       Isolated dips may be read errors — the OCR occasionally misreads a digit on the display rather than reflecting a real drop in noise level.
     </p>
     </>

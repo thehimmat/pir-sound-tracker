@@ -28,7 +28,8 @@ export function StatusBanner() {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: '4px 16px',
     padding: '8px 16px',
     borderRadius: 8,
     marginBottom: 16,
@@ -51,7 +52,7 @@ export function StatusBanner() {
           Current limit: <strong style={{ color: raceDay ? '#fef2f2' : '#e2e8f0' }}>{s.limitDb} dBA</strong>
         </div>
       </div>
-      <div style={{ textAlign: 'right', color: raceDay ? '#fca5a5' : '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>
+      <div style={{ textAlign: 'right', color: raceDay ? '#fca5a5' : '#7c8ba1', fontSize: 12, whiteSpace: 'nowrap' }}>
         <div>{dateFmt.format(now)}</div>
         <div style={{ marginTop: 2 }}>{timeFmt.format(now)} PT</div>
       </div>

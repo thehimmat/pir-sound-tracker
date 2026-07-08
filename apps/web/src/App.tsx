@@ -27,13 +27,14 @@ export default function App() {
           <h1 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0', marginBottom: 12 }}>
             Portland International Raceway — Noise Monitor
           </h1>
-          <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <nav aria-label="Primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             {/* Left: page tabs */}
             <div style={{ display: 'flex', gap: 4 }}>
               {NAV_TABS.map(t => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
+                  aria-pressed={tab === t.id}
                   style={tabStyle(tab === t.id)}
                 >
                   {t.label}
@@ -58,11 +59,13 @@ export default function App() {
 
         <StatusBanner />
 
-        {tab === 'live'    && <LiveView />}
-        {tab === 'today'   && <TodayView />}
-        {tab === 'history' && <HistoryView />}
-        {tab === 'about'   && <AboutView />}
-        {tab === 'support' && <SupportView />}
+        <main>
+          {tab === 'live'    && <LiveView />}
+          {tab === 'today'   && <TodayView />}
+          {tab === 'history' && <HistoryView />}
+          {tab === 'about'   && <AboutView />}
+          {tab === 'support' && <SupportView />}
+        </main>
       </div>
 
       <footer style={footerStyle}>
@@ -95,7 +98,8 @@ function tabStyle(active: boolean): React.CSSProperties {
     cursor: 'pointer',
     fontSize: 13,
     fontWeight: 500,
-    background: active ? '#3b82f6' : '#1e293b',
+    // blue-600 rather than blue-500: white 13px text needs 4.5:1 contrast
+    background: active ? '#2563eb' : '#1e293b',
     color:  active ? '#fff' : '#94a3b8',
     transition: 'background 0.15s',
   };

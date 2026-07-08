@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { TriangleAlert } from 'lucide-react';
 import type { DayBlock, Reading } from '@pir/types';
 import { BlocksChart } from './BlocksChart.js';
 import { ReadingsChart } from './ReadingsChart.js';
@@ -105,7 +106,7 @@ export function DayView({ date }: Props) {
     new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   if (blocksLoading) {
-    return <div style={{ color: '#64748b', padding: '40px 0', textAlign: 'center' }}>Loading…</div>;
+    return <div style={{ color: '#94a3b8', padding: '40px 0', textAlign: 'center' }}>Loading…</div>;
   }
 
   return (
@@ -123,7 +124,7 @@ export function DayView({ date }: Props) {
           fontSize: 13,
           color: '#fca5a5',
         }}>
-          <span style={{ fontSize: 16 }}>⚠</span>
+          <TriangleAlert size={16} aria-hidden="true" style={{ flexShrink: 0 }} />
           <span>
             <strong style={{ color: '#fef2f2' }}>Variance event day — {varianceEvent.name}</strong>
             {varianceEvent.note && <span style={{ color: '#f87171' }}> ({varianceEvent.note})</span>}
@@ -133,34 +134,36 @@ export function DayView({ date }: Props) {
           </span>
         </div>
       )}
-      <div style={{ fontSize: 12, color: '#64748b', marginBottom: 6 }}>
-        Peak dB per 10-min block — click a bar to inspect
+      <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 6 }}>
+        Peak dB per 10-min block — click a bar or use the time field to inspect
       </div>
       <BlocksChart blocks={blocks} selectedBucket={selectedBucket} onBlockClick={fetchWindow} limitDb={limitDb} />
 
       {selectedBucket !== null && (
         <div style={{ marginTop: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-            <button onClick={() => stepWindow(-1)} style={navBtn}>‹ 10 min</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+            <button onClick={() => stepWindow(-1)} aria-label="Back 10 minutes" style={navBtn}>‹ 10 min</button>
             <span style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 500 }}>
               {fmtBucket(selectedBucket)} – {fmtBucket(selectedBucket + TEN_MIN)}
             </span>
-            <button onClick={() => stepWindow(1)} style={navBtn}>10 min ›</button>
+            <button onClick={() => stepWindow(1)} aria-label="Forward 10 minutes" style={navBtn}>10 min ›</button>
 
-            <form onSubmit={handleTimeJump} style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+            <form onSubmit={handleTimeJump} style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
               <input
                 value={timeInput}
                 onChange={e => setTimeInput(e.target.value)}
                 placeholder="HH:MM"
+                aria-label="Jump to time, 24-hour format HH:MM"
+                inputMode="numeric"
                 style={inputStyle}
               />
               <button type="submit" style={navBtn}>Jump</button>
-              {timeError && <span style={{ color: '#ef4444', fontSize: 11 }}>{timeError}</span>}
+              {timeError && <span role="alert" style={{ color: '#ef4444', fontSize: 11 }}>{timeError}</span>}
             </form>
           </div>
 
           {windowLoading ? (
-            <div style={{ color: '#64748b', textAlign: 'center', padding: 24 }}>Loading…</div>
+            <div style={{ color: '#94a3b8', textAlign: 'center', padding: 24 }}>Loading…</div>
           ) : (
             <>
               <SummaryBar readings={windowReadings} />

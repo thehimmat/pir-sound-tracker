@@ -88,7 +88,7 @@ export function NotifyButton() {
 
   if (state === 'unsupported') {
     return (
-      <span style={{ fontSize: 12, color: '#475569' }} title="Notifications blocked or not supported — check browser settings">
+      <span style={{ fontSize: 12, color: '#7c8ba1' }} title="Notifications blocked or not supported — check browser settings">
         Alerts unavailable
       </span>
     );
@@ -131,7 +131,7 @@ function btnStyle(active: boolean): React.CSSProperties {
     borderRadius: 6,
     border: active ? '1px solid #166534' : '1px solid #334155',
     background: active ? '#14532d' : '#1e293b',
-    color: active ? '#4ade80' : '#64748b',
+    color: active ? '#4ade80' : '#94a3b8',
     fontSize: 13,
     fontWeight: 500,
     cursor: 'pointer',
