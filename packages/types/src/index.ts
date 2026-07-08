@@ -197,7 +197,8 @@ export interface Reading {
 export interface DailySummary {
   date: string;      // 'YYYY-MM-DD'
   high_db: number | null;
-  violation_count: number;
+  violation_count: number;  // readings at or above the active limit
+  loud_count: number;       // readings within the warning buffer, below the limit
   reading_count: number;
   error_count: number;
 }

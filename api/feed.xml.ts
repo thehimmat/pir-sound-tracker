@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { getActiveLimit } from '@pir/types';
+import { getActiveLimit, RESTRICTED_LIMIT_DB } from '@pir/types';
 
 const SITE_URL = 'https://pir-sound-tracker.vercel.app';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -25,14 +25,16 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
   const db   = createClient(url, key);
   const since = Date.now() - THIRTY_DAYS_MS;
 
-  // Fetch ok readings in the last 30 days that exceed the day's limit.
-  // We group by finding the first reading in each violation window
-  // (where the previous reading was below the limit).
+  // Fetch only readings loud enough to possibly violate (the lowest active
+  // limit is 90 dBA). Without this filter the 50k row cap covered barely a
+  // day of the 30-day window (~40k readings/day), so recent violations
+  // never appeared in the feed.
   const { data, error } = await db
     .from('readings')
     .select('ts, raw_db')
     .eq('status', 'ok')
     .gte('ts', since)
+    .gte('raw_db', RESTRICTED_LIMIT_DB)
     .order('ts', { ascending: true })
     .limit(50000);
 
@@ -41,18 +43,22 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     return;
   }
 
-  // Walk through readings, find each moment we crossed from below → above the limit
+  // Group violating readings into events: a new event starts when more than
+  // EVENT_GAP_MS has passed since the previous violating reading. (Below-limit
+  // readings aren't fetched, so grouping is by time gap rather than by
+  // watching the value cross the limit.)
+  const EVENT_GAP_MS = 5 * 60_000;
   const rows = (data ?? []) as { ts: number; raw_db: number }[];
   const events: ViolationEvent[] = [];
-  let prevAbove = false;
+  let lastViolationTs: number | null = null;
 
   for (const row of rows) {
-    const limitDb  = getActiveLimit(row.ts);
-    const isAbove  = row.raw_db >= limitDb;
-    if (isAbove && !prevAbove) {
+    const limitDb = getActiveLimit(row.ts);
+    if (row.raw_db < limitDb) continue; // loud but not over the active limit
+    if (lastViolationTs === null || row.ts - lastViolationTs > EVENT_GAP_MS) {
       events.push({ ts: row.ts, raw_db: row.raw_db, limitDb });
     }
-    prevAbove = isAbove;
+    lastViolationTs = row.ts;
   }
 
   // Newest first, cap at 50 items
