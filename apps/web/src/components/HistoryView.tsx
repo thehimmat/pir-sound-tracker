@@ -51,6 +51,12 @@ function perDay(total: number, daysWithData: number): string {
   return `${(total / daysWithData).toFixed(1)}/day`;
 }
 
+/** Share of poll attempts as a percentage, e.g. "97.4%". */
+function pct(part: number, total: number): string {
+  if (total === 0) return '—';
+  return `${(part / total * 100).toFixed(1)}%`;
+}
+
 export function HistoryView() {
   const { data: summaries, loading } = useApi<DailySummary[]>('/api/summary/history');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -89,8 +95,8 @@ export function HistoryView() {
             <Th title="Daily high; monthly rows show the month's max">High dB</Th>
             <Th title="Readings within the warning buffer of the limit (3 dB, or 5 dB during quiet hours); monthly rows show the average per recorded day">Loud</Th>
             <Th title="Readings at or above the active limit; monthly rows show the average per recorded day">Over limit</Th>
-            <Th title="Monthly rows show good reads as a percentage of all poll attempts">Good reads</Th>
-            <Th title="Poll attempts where the source display was unreachable or unreadable; monthly rows show the percentage of all poll attempts">Failed</Th>
+            <Th title="Good reads as a percentage of all poll attempts; hover a cell for the counts">Good reads</Th>
+            <Th title="Percentage of poll attempts where the source display was unreachable or unreadable; hover a cell for the counts">Failed</Th>
           </tr>
         </thead>
         {groups.map((g, gi) => {
@@ -133,13 +139,13 @@ export function HistoryView() {
                   style={{ fontWeight: 600 }}
                   title={`${g.reads.toLocaleString()} good reads of ${(g.reads + g.failed).toLocaleString()} poll attempts`}
                 >
-                  {g.reads + g.failed > 0 ? `${(g.reads / (g.reads + g.failed) * 100).toFixed(1)}%` : '—'}
+                  {pct(g.reads, g.reads + g.failed)}
                 </Td>
                 <Td
                   style={{ fontWeight: 600, color: g.failed > 0 ? '#f59e0b' : '#7c8ba1' }}
                   title={`${g.failed.toLocaleString()} failed of ${(g.reads + g.failed).toLocaleString()} poll attempts`}
                 >
-                  {g.reads + g.failed > 0 ? `${(g.failed / (g.reads + g.failed) * 100).toFixed(1)}%` : '—'}
+                  {pct(g.failed, g.reads + g.failed)}
                 </Td>
               </tr>
 
@@ -169,12 +175,14 @@ export function HistoryView() {
                   <Td style={{ color: s.violation_count > 0 ? '#ef4444' : '#e2e8f0' }}>
                     {s.violation_count}
                   </Td>
-                  <Td>{s.reading_count.toLocaleString()}</Td>
+                  <Td title={`${s.reading_count.toLocaleString()} good reads of ${(s.reading_count + s.error_count).toLocaleString()} poll attempts`}>
+                    {pct(s.reading_count, s.reading_count + s.error_count)}
+                  </Td>
                   <Td
                     style={{ color: s.error_count > 0 ? '#f59e0b' : '#7c8ba1' }}
-                    title={s.error_count > 0 ? `${s.error_count} seconds where the source display was unreachable or unreadable` : undefined}
+                    title={`${s.error_count.toLocaleString()} failed of ${(s.reading_count + s.error_count).toLocaleString()} poll attempts (seconds where the source display was unreachable or unreadable)`}
                   >
-                    {s.error_count > 0 ? s.error_count.toLocaleString() : '—'}
+                    {pct(s.error_count, s.reading_count + s.error_count)}
                   </Td>
                 </tr>
               ))}
