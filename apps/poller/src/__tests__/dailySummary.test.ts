@@ -20,18 +20,23 @@ describe('getDailySummary', () => {
     assert.equal(s.reading_count, 0);
   });
 
-  it('calculates high_db and violation_count correctly', async () => {
+  it('calculates high_db, violation_count and loud_count correctly', async () => {
     if (!process.env.SUPABASE_URL) return;
+    // Midnight Pacific: quiet hours, so the active limit is 90 dBA with a
+    // 5 dB warning buffer. Note: inserted rows persist, so a rerun against
+    // the same date double-counts (pre-existing limitation of this test).
     const base = new Date('2000-01-15T00:00:00').getTime();
-    await insertReading(base + 1000, 80.0, 'ok');
-    await insertReading(base + 2000, 106.5, 'ok');   // violation
-    await insertReading(base + 3000, 104.9, 'ok');   // not a violation
-    await insertReading(base + 4000, 110.0, 'ok');   // violation + new high
+    await insertReading(base + 1000, 80.0, 'ok');    // normal
+    await insertReading(base + 2000, 86.0, 'ok');    // loud (>= 90 - 5)
+    await insertReading(base + 3000, 106.5, 'ok');   // over limit
+    await insertReading(base + 4000, 104.9, 'ok');   // over limit (90 at night)
+    await insertReading(base + 5000, 110.0, 'ok');   // over limit + new high
 
     const s = await getDailySummary('2000-01-15');
     assert.equal(s.high_db, 110.0);
-    assert.equal(s.violation_count, 2);
-    assert.equal(s.reading_count, 4);
+    assert.equal(s.violation_count, 3);
+    assert.equal(s.loud_count, 1);
+    assert.equal(s.reading_count, 5);
   });
 });
 
