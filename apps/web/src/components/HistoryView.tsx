@@ -9,8 +9,8 @@ interface MonthGroup {
   key: string;    // 'YYYY-MM'
   label: string;  // 'June 2026'
   days: DailySummary[];
+  daysWithData: number;  // days with at least one good reading; per-day averages prorate by this
   maxHigh: number | null;
-  avgHigh: number | null;
   loud: number;
   over: number;
   reads: number;
@@ -31,21 +31,24 @@ function groupByMonth(rows: DailySummary[]): MonthGroup[] {
     const key = s.date.slice(0, 7);
     let g = groups[groups.length - 1];
     if (!g || g.key !== key) {
-      g = { key, label: monthLabel(key), days: [], maxHigh: null, avgHigh: null, loud: 0, over: 0, reads: 0, failed: 0 };
+      g = { key, label: monthLabel(key), days: [], daysWithData: 0, maxHigh: null, loud: 0, over: 0, reads: 0, failed: 0 };
       groups.push(g);
     }
     g.days.push(s);
+    if (s.reading_count > 0) g.daysWithData++;
     if (s.high_db !== null && (g.maxHigh === null || s.high_db > g.maxHigh)) g.maxHigh = s.high_db;
     g.loud   += s.loud_count;
     g.over   += s.violation_count;
     g.reads  += s.reading_count;
     g.failed += s.error_count;
   }
-  for (const g of groups) {
-    const highs = g.days.filter(d => d.high_db !== null).map(d => d.high_db as number);
-    g.avgHigh = highs.length > 0 ? highs.reduce((a, b) => a + b, 0) / highs.length : null;
-  }
   return groups;
+}
+
+/** Per-day average over recorded days, e.g. "5.7/day". */
+function perDay(total: number, daysWithData: number): string {
+  if (daysWithData === 0) return '—';
+  return `${(total / daysWithData).toFixed(1)}/day`;
 }
 
 export function HistoryView() {
@@ -83,11 +86,11 @@ export function HistoryView() {
         <thead>
           <tr>
             <Th>Date</Th>
-            <Th title="Daily high; monthly rows show the month's max and average of daily highs">High dB</Th>
-            <Th title="Readings within the warning buffer of the limit (3 dB, or 5 dB during quiet hours)">Loud</Th>
-            <Th title="Readings at or above the active limit">Over limit</Th>
-            <Th>Good reads</Th>
-            <Th title="Poll attempts where the source display was unreachable or unreadable">Failed</Th>
+            <Th title="Daily high; monthly rows show the month's max">High dB</Th>
+            <Th title="Readings within the warning buffer of the limit (3 dB, or 5 dB during quiet hours); monthly rows show the average per recorded day">Loud</Th>
+            <Th title="Readings at or above the active limit; monthly rows show the average per recorded day">Over limit</Th>
+            <Th title="Monthly rows show good reads as a percentage of all poll attempts">Good reads</Th>
+            <Th title="Poll attempts where the source display was unreachable or unreadable; monthly rows show the percentage of all poll attempts">Failed</Th>
           </tr>
         </thead>
         {groups.map((g, gi) => {
@@ -108,23 +111,35 @@ export function HistoryView() {
                     <span style={{ color: '#7c8ba1', fontWeight: 400 }}>· {g.days.length} days</span>
                   </button>
                 </Td>
-                <Td style={{ whiteSpace: 'nowrap' }}>
+                <Td style={{ whiteSpace: 'nowrap' }} title={`Highest daily reading in ${g.label}`}>
                   <strong style={{ color: g.maxHigh !== null && g.over > 0 ? '#ef4444' : '#e2e8f0' }}>
-                    {g.maxHigh !== null ? g.maxHigh.toFixed(1) : '—'}
+                    {g.maxHigh !== null ? `${g.maxHigh.toFixed(1)} dB` : '—'}
                   </strong>
-                  {g.avgHigh !== null && (
-                    <span style={{ color: '#7c8ba1', fontSize: 11 }}> max · {g.avgHigh.toFixed(1)} avg</span>
-                  )}
+                  <span style={{ color: '#7c8ba1', fontSize: 11 }}> max</span>
                 </Td>
-                <Td style={{ fontWeight: 600, color: g.loud > 0 ? '#f59e0b' : '#e2e8f0' }}>
-                  {g.loud.toLocaleString()}
+                <Td
+                  style={{ whiteSpace: 'nowrap', fontWeight: 600, color: g.loud > 0 ? '#f59e0b' : '#e2e8f0' }}
+                  title={`${g.loud.toLocaleString()} total over ${g.daysWithData} recorded days`}
+                >
+                  {perDay(g.loud, g.daysWithData)}
                 </Td>
-                <Td style={{ fontWeight: 600, color: g.over > 0 ? '#ef4444' : '#e2e8f0' }}>
-                  {g.over.toLocaleString()}
+                <Td
+                  style={{ whiteSpace: 'nowrap', fontWeight: 600, color: g.over > 0 ? '#ef4444' : '#e2e8f0' }}
+                  title={`${g.over.toLocaleString()} total over ${g.daysWithData} recorded days`}
+                >
+                  {perDay(g.over, g.daysWithData)}
                 </Td>
-                <Td style={{ fontWeight: 600 }}>{g.reads.toLocaleString()}</Td>
-                <Td style={{ fontWeight: 600, color: g.failed > 0 ? '#f59e0b' : '#7c8ba1' }}>
-                  {g.failed > 0 ? g.failed.toLocaleString() : '—'}
+                <Td
+                  style={{ fontWeight: 600 }}
+                  title={`${g.reads.toLocaleString()} good reads of ${(g.reads + g.failed).toLocaleString()} poll attempts`}
+                >
+                  {g.reads + g.failed > 0 ? `${(g.reads / (g.reads + g.failed) * 100).toFixed(1)}%` : '—'}
+                </Td>
+                <Td
+                  style={{ fontWeight: 600, color: g.failed > 0 ? '#f59e0b' : '#7c8ba1' }}
+                  title={`${g.failed.toLocaleString()} failed of ${(g.reads + g.failed).toLocaleString()} poll attempts`}
+                >
+                  {g.reads + g.failed > 0 ? `${(g.failed / (g.reads + g.failed) * 100).toFixed(1)}%` : '—'}
                 </Td>
               </tr>
 
