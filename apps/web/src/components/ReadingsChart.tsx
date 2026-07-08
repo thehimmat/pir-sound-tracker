@@ -44,7 +44,7 @@ export function ReadingsChart({ readings, tickIntervalMs = TEN_MIN, limitDb = 10
 
   return (
     <>
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={240}>
       <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
         <XAxis

@@ -140,6 +140,53 @@ export function classifyReading(db: number, ts: number): NoiseStatus {
   return 'normal';
 }
 
+/** True during track operating hours (9:00 AM to 10:00 PM, track time). */
+export function isOperatingHours(ts: number): boolean {
+  const { hour } = getTrackTimeParts(ts);
+  return hour >= OPERATING_START_HOUR && hour < OPERATING_END_HOUR;
+}
+
+/** True during quiet hours (10:00 PM to 8:00 AM, track time). */
+export function isQuietHours(ts: number): boolean {
+  const { hour } = getTrackTimeParts(ts);
+  return hour >= QUIET_START_HOUR || hour < QUIET_END_HOUR;
+}
+
+/** Human-readable summary of the rules in effect at a timestamp. */
+export interface DayStatus {
+  dateStr: string;               // YYYY-MM-DD at the track
+  event: VarianceEvent | null;   // active variance event, if any
+  isMonday: boolean;
+  inOperatingHours: boolean;
+  inQuietHours: boolean;
+  limitDb: number;               // limit in effect right now
+  headline: string;              // e.g. "Race day: Rose Cup Races"
+  hoursNote: string;             // e.g. "Operating hours (9:00 AM to 10:00 PM)"
+}
+
+export function getDayStatus(ts: number): DayStatus {
+  const { dateStr, weekday } = getTrackTimeParts(ts);
+  const event = getEventForDate(dateStr);
+  const isMonday = weekday === 'Mon';
+  const inOperatingHours = isOperatingHours(ts);
+  const inQuietHours = isQuietHours(ts);
+  const limitDb = getActiveLimit(ts);
+
+  const headline = event
+    ? `Race day: ${event.name}`
+    : isMonday
+      ? `Monday: ${RESTRICTED_LIMIT_DB} dBA limit all day`
+      : 'Normal operating day';
+
+  const hoursNote = inOperatingHours
+    ? 'Operating hours (9:00 AM to 10:00 PM)'
+    : inQuietHours
+      ? 'Quiet hours (10:00 PM to 8:00 AM)'
+      : 'Outside operating hours';
+
+  return { dateStr, event, isMonday, inOperatingHours, inQuietHours, limitDb, headline, hoursNote };
+}
+
 export interface Reading {
   id: number;
   ts: number;        // Unix ms

@@ -5,6 +5,7 @@ import { HistoryView } from './components/HistoryView.js';
 import { AboutView } from './components/AboutView.js';
 import { SupportView } from './components/SupportView.js';
 import { NotifyButton } from './components/NotifyButton.js';
+import { StatusBanner } from './components/StatusBanner.js';
 
 type Tab = 'live' | 'today' | 'history' | 'about' | 'support';
 
@@ -18,10 +19,12 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('live');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    // #root adds 24px vertical padding on each side; subtract it so the
+    // footer sits within the first viewport instead of 48px below the fold
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 48px)' }}>
       <div style={{ flex: 1 }}>
-        <header style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0', marginBottom: 16 }}>
+        <header style={{ marginBottom: 16 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 600, color: '#e2e8f0', marginBottom: 12 }}>
             Portland International Raceway — Noise Monitor
           </h1>
           <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -52,6 +55,8 @@ export default function App() {
             </div>
           </nav>
         </header>
+
+        <StatusBanner />
 
         {tab === 'live'    && <LiveView />}
         {tab === 'today'   && <TodayView />}
@@ -110,26 +115,30 @@ const reportBtnStyle: React.CSSProperties = {
 };
 
 const footerStyle: React.CSSProperties = {
-  marginTop: 48,
-  paddingTop: 16,
+  marginTop: 20,
+  paddingTop: 14,
   borderTop: '1px solid #1e293b',
-  fontSize: 12,
-  color: '#475569',
+  fontSize: 13,
+  fontWeight: 500,
+  color: '#94a3b8',
   display: 'flex',
+  flexWrap: 'wrap',
   gap: 4,
   alignItems: 'center',
+  whiteSpace: 'nowrap', // wrap between footer items, never inside a link
 };
 
 const linkStyle: React.CSSProperties = {
-  color: '#475569',
+  color: '#94a3b8',
   textDecoration: 'none',
 };
 
 const footerLinkBtn: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: '#475569',
-  fontSize: 12,
+  color: '#94a3b8',
+  fontSize: 13,
+  fontWeight: 500,
   cursor: 'pointer',
   padding: 0,
 };

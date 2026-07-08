@@ -32,7 +32,7 @@ export function DbDisplay({ value, status, noiseStatus }: Props) {
   const waiting = value === null && status === null;
 
   return (
-    <div style={{ textAlign: 'center', padding: '24px 0' }}>
+    <div style={{ textAlign: 'center', padding: '10px 0 14px' }}>
       <div style={{
         fontSize: 96,
         fontWeight: 700,

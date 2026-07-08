@@ -5,7 +5,7 @@ import { useApi } from '../hooks/useApi.js';
 import { DbDisplay } from './DbDisplay.js';
 import { ReadingsChart } from './ReadingsChart.js';
 import { SummaryBar } from './SummaryBar.js';
-import { getActiveLimit, getEventForDate, getTrackDateStr, classifyReading, type NoiseStatus } from '../utils/varianceEvents.js';
+import { getActiveLimit, classifyReading, type NoiseStatus } from '../utils/varianceEvents.js';
 
 const OFFLINE_THRESHOLD_MS = 10_000;
 const SILENCE_THRESHOLD_MS = 15_000; // no WS message at all → poller offline
@@ -56,9 +56,7 @@ export function LiveView() {
     }
   }, []));
 
-  const today = getTrackDateStr(Date.now());
   const limitDb = getActiveLimit(Date.now());
-  const varianceEvent = getEventForDate(today);
 
   const noiseStatus: NoiseStatus | null =
     latest && latest.status === 'ok' && latest.raw_db !== null
@@ -94,29 +92,6 @@ export function LiveView() {
               style={{ color: '#fca5a5', textDecoration: 'underline' }}
             >check PIR's site</a></>
           )}
-        </div>
-      )}
-      {varianceEvent && (
-        <div style={{
-          background: '#7c2d12',
-          border: '1px solid #ef4444',
-          borderRadius: 8,
-          padding: '10px 16px',
-          marginBottom: 12,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          fontSize: 13,
-          color: '#fca5a5',
-        }}>
-          <span style={{ fontSize: 16 }}>⚠</span>
-          <span>
-            <strong style={{ color: '#fef2f2' }}>Variance event day — {varianceEvent.name}</strong>
-            {varianceEvent.note && <span style={{ color: '#f87171' }}> ({varianceEvent.note})</span>}
-            <span style={{ marginLeft: 8 }}>
-              · Permitted limit today: <strong style={{ color: '#fef2f2' }}>{varianceEvent.limitDb} dBA</strong>
-            </span>
-          </span>
         </div>
       )}
       <DbDisplay value={latest?.raw_db ?? null} status={latest?.status ?? null} noiseStatus={noiseStatus} />
@@ -158,7 +133,7 @@ function ChartPlaceholder({ timedOut, error, onRetry }: PlaceholderProps) {
 
   return (
     <div style={{
-      height: 260,
+      height: 240,
       borderRadius: 8,
       background: '#0f1117',
       border: `1px solid ${hasProblem ? '#334155' : '#1e293b'}`,
