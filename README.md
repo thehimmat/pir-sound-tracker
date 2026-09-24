@@ -32,10 +32,10 @@ On variance event days, the threshold line on charts automatically adjusts to th
 
 ```
 PIR website (JPEG) → poller → Sharp (crop + threshold) → Tesseract OCR → Supabase
-                                                                              ↓
-                                                             Vercel API → React frontend
-                                                                              ↑
-                                                             WebSocket (live readings)
+                        │                                                     ↓
+                        │                                    Vercel API → React frontend
+                        │                                                     ↑
+                        └──── WebSocket wss://<fly-app>/ws (live readings) ────┘
 ```
 
 1. **Fetch** — the poller fetches a JPEG snapshot of PIR's meter display every second, cache-busted with a timestamp query param.
@@ -44,7 +44,7 @@ PIR website (JPEG) → poller → Sharp (crop + threshold) → Tesseract OCR →
 4. **Preprocess** — [Sharp](https://sharp.pixelplumbing.com/) crops the region containing the LAFmax digit and applies a threshold to produce a clean black-and-white image.
 5. **OCR** — [Tesseract.js](https://tesseract.projectnaptha.com/) (English, page segmentation mode 7) extracts the numerical value.
 6. **Parse & store** — a regex extracts the dB integer; the row is inserted into Supabase with a `status` of `ok`, `ocr_fail`, `error`, `blank`, or `stale`.
-7. **Broadcast** — the new reading is broadcast over a WebSocket to all connected browser clients for live updates.
+7. **Broadcast** — the new reading is pushed over the poller's own WebSocket (`/ws` on the same port as `/health`) to all connected browser clients. The Live view fills any gap from the API when the socket reconnects. Supabase Realtime is not used: it bills per message per client and would exceed the free quota with a single tab left open.
 
 Because readings are extracted from an image rather than a direct sensor feed, occasional OCR misreads can occur — most often appearing as a sudden isolated spike or dip. These are artefacts, not real changes in noise level.
 
@@ -109,7 +109,9 @@ npm run dev:poller   # just the poller
 npm run dev:web      # just the frontend (uses Vite dev server)
 ```
 
-The frontend will be at `http://localhost:5173`. The poller WebSocket server listens on port 3001 by default. Set `MOCK_MODE=true` in `.env` to run the poller without the live image feed (generates synthetic readings).
+The frontend will be at `http://localhost:5173`. The poller serves `/ping`, `/health` and the live-readings WebSocket `/ws` on port 8080 (`HEALTH_PORT`); the dev frontend connects to `ws://localhost:8080/ws`. Set `MOCK_MODE=true` in `.env` to run the poller without the live image feed (generates synthetic readings).
+
+Production builds connect to `wss://pir-sound-tracker-poller.fly.dev/ws`. Set `VITE_WS_URL` at build time (a Vercel environment variable) to point elsewhere.
 
 ---
 
@@ -126,7 +128,7 @@ fly secrets set IMAGE_URL=... SUPABASE_URL=... SUPABASE_ANON_KEY=... \
   --app pir-sound-tracker-poller
 ```
 
-The container exposes a `/health` endpoint on port 8080 that returns `{"status":"ok"}` as long as the poll loop has run within the last 10 seconds. Fly uses this for its own health checks; UptimeRobot uses it for external uptime monitoring.
+The container exposes port 8080 with `/ping` (Fly's liveness check, always 200), `/health` (503 only after an hour without a poll; the body includes `wsClients`, the number of live-view browsers connected) and `/ws` (the live-readings WebSocket, reachable as `wss://pir-sound-tracker-poller.fly.dev/ws`). UptimeRobot watches the Vercel `/api/health` route instead, which checks the DB for a recent row.
 
 ---
 

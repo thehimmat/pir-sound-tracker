@@ -1,5 +1,6 @@
-import { createServer } from 'node:http';
+import { createServer, type Server } from 'node:http';
 import { performance } from 'node:perf_hooks';
+import { getWsClientCount } from './wsServer.js';
 
 // Use monotonic timestamps (performance.now()) so NTP step-corrections on
 // container startup don't cause the health check to see a stale poll.
@@ -25,16 +26,19 @@ export function recordPoll(ts: number, isOk: boolean): void {
 }
 
 /**
- * Start a minimal HTTP server on `port`.
+ * Build the poller's HTTP server (not yet listening).
  *
  * GET /ping   — always 200 while the process is alive (used by Fly's internal check)
  * GET /health — smart check for UptimeRobot:
- *   200  { status: "ok",    lastPollAgoMs, lastOkAgoMs }   — poll loop alive
- *   503  { status: "stale", lastPollAgoMs, lastOkAgoMs }   — loop stalled (>10s since last poll)
- *   503  { status: "starting" }                            — not yet polled once
+ *   200  { status: "ok",    lastPollAgoMs, lastOkAgoMs, wsClients }  — poll loop alive
+ *   503  { status: "stale", lastPollAgoMs, lastOkAgoMs, wsClients }  — loop stalled
+ *   503  { status: "starting" }                                       — not yet polled once
+ *
+ * The live-readings WebSocket is attached to this same server (see wsServer.ts)
+ * so one Fly service port covers both.
  */
-export function startHealthServer(port: number): void {
-  const server = createServer((req, res) => {
+export function createHealthServer(): Server {
+  return createServer((req, res) => {
     // Fly's internal liveness check — always 200 if the process is running
     if (req.url === '/ping') {
       res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -62,13 +66,19 @@ export function startHealthServer(port: number): void {
       status:       alive                ? 'ok' : lastPollTs == null ? 'starting' : 'stale',
       lastPollAgoMs,
       lastOkAgoMs,
+      wsClients:    getWsClientCount(),
     });
 
     res.writeHead(code, { 'Content-Type': 'application/json' });
     res.end(body);
   });
+}
 
+/** Create the HTTP server and start listening on `port`. */
+export function startHealthServer(port: number): Server {
+  const server = createHealthServer();
   server.listen(port, '0.0.0.0', () => {
     console.log(`[health] listening on http://0.0.0.0:${port}/health`);
   });
+  return server;
 }
