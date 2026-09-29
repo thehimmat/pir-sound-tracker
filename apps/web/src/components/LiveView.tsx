@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { Reading, WsMessage } from '@pir/types';
-import { useRealtimeReadings } from '../hooks/useRealtimeReadings.js';
+import { useWebSocket } from '../hooks/useWebSocket.js';
 import { useApi } from '../hooks/useApi.js';
 import { DbDisplay } from './DbDisplay.js';
 import { ReadingsChart } from './ReadingsChart.js';
@@ -35,7 +35,7 @@ export function LiveView() {
     return () => clearTimeout(id);
   }, [historyLoading]);
 
-  useRealtimeReadings(useCallback((msg: WsMessage) => {
+  useWebSocket(useCallback((msg: WsMessage) => {
     // Restart silence detector on every message — cleared+null would leave it permanently disabled
     if (silenceTimer.current) clearTimeout(silenceTimer.current);
     silenceTimer.current = setTimeout(() => setFeedOffline(true), SILENCE_THRESHOLD_MS);
@@ -54,7 +54,11 @@ export function LiveView() {
         offlineTimer.current = null;
       }, OFFLINE_THRESHOLD_MS);
     }
-  }, []));
+  }, []), {
+    // A dropped socket (poller restart, laptop asleep) leaves a hole in the
+    // trace; refetching the last hour fills it from the DB.
+    onReconnect: refetchHistory,
+  });
 
   const limitDb = getActiveLimit(Date.now());
 

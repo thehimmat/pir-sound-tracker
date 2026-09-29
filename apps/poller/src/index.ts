@@ -11,14 +11,12 @@ import { ocrImage, terminateOcr } from './ocr.js';
 import { parseDbReading } from './parser.js';
 import { simpleHash } from './imageHash.js';
 import { nextMockReading } from './mock.js';
-import { broadcast, startWsServer } from './wsServer.js';
+import { broadcast, attachWsServer, WS_PATH } from './wsServer.js';
 import { startHealthServer, recordPoll, getPollAgeMs } from './healthServer.js';
 import { insertReading } from '@pir/db';
 import type { ReadingStatus, WsMessage } from '@pir/types';
 import { getActiveLimit } from '@pir/types';
 import { sendViolationAlert } from './notify.js';
-
-startWsServer(config.wsPort);
 
 let prevHash: string | null = null;
 let staleFirstTs: number | null = null;
@@ -201,11 +199,13 @@ async function poll(): Promise<void> {
 
 async function run(): Promise<void> {
   const imageHost = config.imageUrl ? (() => { try { return new URL(config.imageUrl).hostname; } catch { return '(invalid url)'; } })() : '(not set)';
-  console.log(`[poller] starting — mock=${config.mockMode} poll=${config.pollMs}ms ws=${config.wsPort} health=${config.healthPort} imageHost=${imageHost}`);
+  console.log(`[poller] starting — mock=${config.mockMode} poll=${config.pollMs}ms health=${config.healthPort} ws=${WS_PATH} imageHost=${imageHost}`);
   const mem = process.memoryUsage();
   console.log(`[poller] initial memory — rss=${Math.round(mem.rss / 1024 / 1024)}MB heap=${Math.round(mem.heapUsed / 1024 / 1024)}/${Math.round(mem.heapTotal / 1024 / 1024)}MB`);
 
-  startHealthServer(config.healthPort);
+  // One HTTP server carries /ping, /health and the live-readings WebSocket.
+  const server = startHealthServer(config.healthPort);
+  attachWsServer(server);
 
   // Watchdog: if poll loop stalls for >2 minutes, exit so Fly restarts us automatically.
   // The OCR 30s timeout handles the most common hang (Tesseract worker degradation);

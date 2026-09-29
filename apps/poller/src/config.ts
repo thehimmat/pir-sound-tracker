@@ -19,7 +19,6 @@ function envInt(key: string, fallback: number): number {
 export const config = {
   imageUrl:  env('IMAGE_URL', ''),
   mockMode:  env('MOCK_MODE', 'false') === 'true',
-  wsPort:    envInt('WS_PORT', 3001),
   cropX:     envInt('CROP_X', 0),
   cropY:     envInt('CROP_Y', 46),   // percent from top — targets the large LAFmax digit
   cropW:     envInt('CROP_W', 100),  // percent of width
