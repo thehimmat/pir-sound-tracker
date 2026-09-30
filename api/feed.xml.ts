@@ -29,12 +29,11 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
   // limit is 90 dBA). Without this filter the 50k row cap covered barely a
   // day of the 30-day window (~40k readings/day), so recent violations
   // never appeared in the feed.
+  // readings_between() spans the raw table and the packed archive; with
+  // p_min_db it returns only ok readings at or above that level.
   const { data, error } = await db
-    .from('readings')
+    .rpc('readings_between', { p_from: since, p_to: null, p_min_db: RESTRICTED_LIMIT_DB })
     .select('ts, raw_db')
-    .eq('status', 'ok')
-    .gte('ts', since)
-    .gte('raw_db', RESTRICTED_LIMIT_DB)
     .order('ts', { ascending: true })
     .limit(50000);
 

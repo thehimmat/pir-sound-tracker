@@ -13,13 +13,15 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "tsc && node --test dist/__tests__/*.test.js"
   },
   "dependencies": {
     "@pir/types": "*",
     "@supabase/supabase-js": "^2.43.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "typescript": "^5.4.0"
   }
 }

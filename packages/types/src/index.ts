@@ -188,8 +188,7 @@ export function getDayStatus(ts: number): DayStatus {
 }
 
 export interface Reading {
-  id: number;
-  ts: number;        // Unix ms
+  ts: number;        // Unix ms (whole seconds for archived readings)
   raw_db: number | null;
   status: ReadingStatus;
 }

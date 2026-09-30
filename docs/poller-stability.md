@@ -247,6 +247,24 @@ approximately 1 row/second in the DB.
 
 ---
 
+## Incident — 2026-09-30, 37-minute DB outage from an ad hoc query
+
+**Window:** 13:29:16 – 14:06:24 UTC. No readings were stored in that window
+(the poller's inserts are fire-and-forget and do not retry). The Live view kept
+working because live readings go straight from the poller's WebSocket.
+
+**Cause:** while verifying the readings archive backfill, a one-off SQL check
+grouped all ~5.4M raw rows in a single statement. The Supabase MCP tool gave up
+after 60 s but the statement kept running server-side and exhausted the
+instance; the API edge returned 522/525 for every request until the project was
+restarted from the dashboard.
+
+**Rule going forward:** every ad hoc query against production starts with
+`set statement_timeout = '25s';` and anything touching more than a day or two of
+`readings` is split into bounded ranges.
+
+---
+
 ## Current configuration (as of June 2026)
 
 ```toml
