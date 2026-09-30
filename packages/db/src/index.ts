@@ -28,12 +28,16 @@ export async function insertReading(
   if (error) throw error;
 }
 
+// Readings are read through the readings_between() SQL function, which
+// serves recent seconds from the raw `readings` table and older ones from the
+// packed per-minute archive (supabase/migrations/20260929_readings_archive.sql).
+function readingsBetween(fromTs: number, toTs: number | null) {
+  return getClient().rpc('readings_between', { p_from: fromTs, p_to: toTs });
+}
+
 export async function getReadingsSince(fromTs: number): Promise<Reading[]> {
   // Fetch newest-first so the 2000-row cap keeps the most recent data, then reverse.
-  const { data, error } = await getClient()
-    .from('readings')
-    .select('*')
-    .gte('ts', fromTs)
+  const { data, error } = await readingsBetween(fromTs, null)
     .order('ts', { ascending: false })
     .limit(2000);
   if (error) throw error;
@@ -43,11 +47,7 @@ export async function getReadingsSince(fromTs: number): Promise<Reading[]> {
 export async function getReadingsForDay(dateStr: string): Promise<Reading[]> {
   const start = new Date(dateStr + 'T00:00:00').getTime();
   const end   = start + 86_400_000;
-  const { data, error } = await getClient()
-    .from('readings')
-    .select('*')
-    .gte('ts', start)
-    .lt('ts', end)
+  const { data, error } = await readingsBetween(start, end)
     .order('ts', { ascending: true })
     .limit(20000);
   if (error) throw error;
@@ -62,11 +62,7 @@ export async function getDayBlocks(startTs: number, endTs: number): Promise<DayB
 }
 
 export async function getReadingsWindow(fromTs: number, toTs: number): Promise<Reading[]> {
-  const { data, error } = await getClient()
-    .from('readings')
-    .select('*')
-    .gte('ts', fromTs)
-    .lt('ts', toTs)
+  const { data, error } = await readingsBetween(fromTs, toTs)
     .order('ts', { ascending: true })
     .limit(700);
   if (error) throw error;
