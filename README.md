@@ -46,6 +46,8 @@ PIR website (JPEG) → poller → Sharp (crop + threshold) → Tesseract OCR →
 6. **Parse & store** — a regex extracts the dB integer; the row is inserted into Supabase with a `status` of `ok`, `ocr_fail`, `error`, `blank`, or `stale`.
 7. **Broadcast** — the new reading is pushed over the poller's own WebSocket (`/ws` on the same port as `/health`) to all connected browser clients. The Live view fills any gap from the API when the socket reconnects. Supabase Realtime is not used: it bills per message per client and would exceed the free quota with a single tab left open.
 
+**Storage.** The last 7 days of readings live in the `readings` table, one row per poll. A nightly `pg_cron` job (`archive-readings-nightly`) packs anything older into `readings_archive`, one row per minute with 60 per-second slots, and deletes it from `readings`. Every second is kept. The `readings_between()` SQL function reads both tables and returns the same per-second rows, so the API and charts don't care where a reading is stored. See `supabase/migrations/20260929_readings_archive.sql`.
+
 Because readings are extracted from an image rather than a direct sensor feed, occasional OCR misreads can occur — most often appearing as a sudden isolated spike or dip. These are artefacts, not real changes in noise level.
 
 ---

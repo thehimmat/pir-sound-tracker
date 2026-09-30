@@ -1,59 +1,11 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { freshDb as freshDbWith, insert, between, archive, approx, T0, MIN, type Db, type Row } from './pgHarness.js';
 
 // Exercises supabase/migrations/20260929_readings_archive.sql against an
 // in-process Postgres (PGlite), starting from the live `readings` shape.
 
-const MIGRATION = resolve(__dirname, '../../../../supabase/migrations/20260929_readings_archive.sql');
-
-// Base schema as it exists in production before the migration (Sep 2026).
-const BASE_SCHEMA = `
-  create role anon; create role authenticated; create role service_role;
-  create table public.readings (
-    id     bigserial primary key,
-    ts     bigint not null,
-    raw_db real,
-    status text not null
-  );
-  create index idx_readings_ts on public.readings (ts);
-`;
-
-// 2026-09-01 00:00:00 UTC, a whole minute.
-const T0 = 1_788_220_800_000;
-const MIN = 60_000;
-
-type Row = { ts: number; raw_db: number | null; status: string };
-type Db = {
-  exec(sql: string): Promise<unknown>;
-  query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
-};
-
-async function freshDb(): Promise<Db> {
-  const { PGlite } = await import('@electric-sql/pglite');
-  const db = new PGlite() as unknown as Db;
-  await db.exec(BASE_SCHEMA);
-  await db.exec(readFileSync(MIGRATION, 'utf8'));
-  return db;
-}
-
-async function insert(db: Db, rows: Row[]): Promise<void> {
-  for (const r of rows) {
-    await db.query('insert into readings (ts, raw_db, status) values ($1, $2, $3)', [r.ts, r.raw_db, r.status]);
-  }
-}
-
-async function between(db: Db, from: number, to: number | null, minDb: number | null = null): Promise<Row[]> {
-  const { rows } = await db.query<{ ts: string; raw_db: number | null; status: string }>(
-    'select ts, raw_db, status from readings_between($1, $2, $3)', [from, to, minDb]);
-  return rows.map(r => ({ ts: Number(r.ts), raw_db: r.raw_db === null ? null : Number(r.raw_db), status: r.status }));
-}
-
-async function archive(db: Db, cutoff: number, del = false): Promise<number> {
-  const { rows } = await db.query<{ n: number }>('select archive_readings($1, $2) as n', [cutoff, del]);
-  return rows[0].n;
-}
+const freshDb = () => freshDbWith(['20260929_readings_archive.sql']);
 
 async function archivedBefore(db: Db): Promise<number> {
   const { rows } = await db.query<{ v: string }>('select archived_before as v from readings_archive_state');
@@ -65,8 +17,6 @@ async function slots(db: Db, minuteTs: number): Promise<(number | null)[]> {
     'select slots from readings_archive where minute_ts = $1', [minuteTs]);
   return rows[0].slots;
 }
-
-const approx = (rows: Row[]) => rows.map(r => ({ ...r, raw_db: r.raw_db === null ? null : Math.round(r.raw_db * 10) / 10 }));
 
 describe('readings slot encoding', () => {
   let db: Db;
@@ -247,9 +197,6 @@ describe('permissions', () => {
 
   it('lets the public API roles read through readings_between', async () => {
     const db = await freshDb();
-    await db.exec('grant select on readings, readings_archive, readings_archive_state to anon');
-    await db.exec(`create policy "public read" on readings for select to anon using (true)`);
-    await db.exec('alter table readings enable row level security');
     await insert(db, [{ ts: T0 + 1000, raw_db: 70, status: 'ok' }, { ts: T0 + MIN + 1000, raw_db: 71, status: 'ok' }]);
     await archive(db, T0 + MIN);
     await db.exec('set role anon');
