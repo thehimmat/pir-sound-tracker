@@ -5,7 +5,7 @@ import { freshDb as freshDbWith, insert, between, archive, approx, count, T0, MI
 // Exercises supabase/migrations/20260930_readings_swap.sql: replacing the
 // bloated `readings` table with a slim copy of the un-archived rows.
 
-const freshDb = () => freshDbWith(['20260929_readings_archive.sql', '20260930_readings_swap.sql']);
+const freshDb = () => freshDbWith(['20260929_readings_archive.sql', '20260930_readings_swap.sql', '20261001_readings_between_bounded_scan.sql']);
 
 const summaryCalls = (db: Db) => count(db, 'select n from summary_calls');
 

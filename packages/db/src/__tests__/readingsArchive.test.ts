@@ -1,11 +1,11 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { freshDb as freshDbWith, insert, between, archive, approx, T0, MIN, type Db, type Row } from './pgHarness.js';
+import { freshDb as freshDbWith, insert, between, archive, approx, genericPlanOfFunction, T0, MIN, type Db, type Row } from './pgHarness.js';
 
 // Exercises supabase/migrations/20260929_readings_archive.sql against an
 // in-process Postgres (PGlite), starting from the live `readings` shape.
 
-const freshDb = () => freshDbWith(['20260929_readings_archive.sql']);
+const freshDb = () => freshDbWith(['20260929_readings_archive.sql', '20261001_readings_between_bounded_scan.sql']);
 
 async function archivedBefore(db: Db): Promise<number> {
   const { rows } = await db.query<{ v: string }>('select archived_before as v from readings_archive_state');
@@ -202,5 +202,35 @@ describe('permissions', () => {
     await db.exec('set role anon');
     assert.equal((await between(db, T0, null)).length, 2);
     await db.exec('reset role');
+  });
+});
+
+describe('readings_between query plan', () => {
+  const PARAMS = [
+    { name: 'p_from', type: 'bigint' },
+    { name: 'p_to', type: 'bigint' },
+    { name: 'p_min_db', type: 'real' },
+  ];
+  const archiveScans = (nodes: Awaited<ReturnType<typeof genericPlanOfFunction>>) =>
+    nodes.filter(n => n['Relation Name'] === 'readings_archive');
+
+  async function db2() {
+    return freshDbWith(['20260929_readings_archive.sql', '20261001_readings_between_bounded_scan.sql']);
+  }
+
+  it('bounds the archive index scan on both ends, so old windows do not unpack later minutes', async () => {
+    const db = await db2();
+    const scans = archiveScans(await genericPlanOfFunction(db, 'readings_between', PARAMS, [T0, T0 + MIN, null]));
+    assert.equal(scans.length, 1);
+    // An index scan reports 'Index Cond'; a bitmap heap scan reports 'Recheck Cond'.
+    const cond = scans[0]['Index Cond'] ?? scans[0]['Recheck Cond'] ?? '';
+    assert.match(cond, /minute_ts >=/);
+    assert.match(cond, /minute_ts </);
+  });
+
+  it('skips quiet minutes before unpacking them when min_db is set', async () => {
+    const db = await db2();
+    const scans = archiveScans(await genericPlanOfFunction(db, 'readings_between', PARAMS, [T0, null, 90]));
+    assert.match(scans[0].Filter ?? '', /max_tenths/);
   });
 });

@@ -78,3 +78,27 @@ export async function count(db: Db, sql: string): Promise<number> {
 /** Round raw_db to tenths so float4 noise doesn't break deep equality. */
 export const approx = (rows: Row[]) =>
   rows.map(r => ({ ...r, raw_db: r.raw_db === null ? null : Math.round(r.raw_db * 10) / 10 }));
+
+export type PlanNode = { 'Node Type': string; 'Relation Name'?: string; 'Index Cond'?: string; 'Recheck Cond'?: string; Filter?: string; Plans?: PlanNode[] };
+
+/**
+ * Generic plan (no knowledge of argument values) for the body of a SQL
+ * function, the plan Postgres actually uses when the function is not inlined.
+ * Parameter names are swapped for $1..$n in the order given.
+ */
+export async function genericPlanOfFunction(
+  db: Db, fn: string, params: { name: string; type: string }[], args: unknown[],
+): Promise<PlanNode[]> {
+  const { rows } = await db.query<{ src: string }>(`select prosrc as src from pg_proc where proname = $1`, [fn]);
+  let body = rows[0].src.trim().replace(/;\s*$/, '');
+  params.forEach((p, i) => { body = body.replace(new RegExp(`\\b${p.name}\\b`, 'g'), `$${i + 1}`); });
+  await db.exec(`deallocate all; set plan_cache_mode = force_generic_plan; set enable_seqscan = off;`);
+  await db.exec(`prepare plan_probe(${params.map(p => p.type).join(', ')}) as ${body}`);
+  const literals = args.map(a => (a === null ? 'null' : String(a))).join(', ');
+  const { rows: plan } = await db.query<{ 'QUERY PLAN': [{ Plan: PlanNode }] }>(`explain (format json) execute plan_probe(${literals})`);
+  await db.exec(`deallocate plan_probe; reset plan_cache_mode; reset enable_seqscan;`);
+  const nodes: PlanNode[] = [];
+  const walk = (n: PlanNode) => { nodes.push(n); (n.Plans ?? []).forEach(walk); };
+  walk(plan[0]['QUERY PLAN'][0].Plan);
+  return nodes;
+}
