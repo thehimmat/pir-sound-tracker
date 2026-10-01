@@ -40,3 +40,23 @@ button, input {
   margin: 0 auto;
   padding: 24px 16px;
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #334155;
+  border-top-color: #22c55e;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: fade-pulse 1.6s ease-in-out infinite;
+  }
+}
