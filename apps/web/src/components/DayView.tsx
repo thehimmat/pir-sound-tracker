@@ -4,7 +4,9 @@ import type { DayBlock, Reading } from '@pir/types';
 import { BlocksChart } from './BlocksChart.js';
 import { ReadingsChart } from './ReadingsChart.js';
 import { SummaryBar } from './SummaryBar.js';
+import { LoadingState } from './LoadingState.js';
 import { getLimitForDate, getEventForDate, getActiveLimit } from '../utils/varianceEvents.js';
+import { mayBeArchived } from '../utils/archiveWindow.js';
 
 const TEN_MIN       = 10 * 60 * 1000;
 const REFRESH_MS    = 2 * 60 * 1000; // re-fetch blocks every 2 min when viewing today
@@ -106,7 +108,7 @@ export function DayView({ date }: Props) {
     new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   if (blocksLoading) {
-    return <div style={{ color: '#94a3b8', padding: '40px 0', textAlign: 'center' }}>Loading…</div>;
+    return <LoadingState archived={mayBeArchived(localDayBounds(date)[0])} padding="40px 0" />;
   }
 
   return (
@@ -163,7 +165,7 @@ export function DayView({ date }: Props) {
           </div>
 
           {windowLoading ? (
-            <div style={{ color: '#94a3b8', textAlign: 'center', padding: 24 }}>Loading…</div>
+            <LoadingState archived={mayBeArchived(selectedBucket)} />
           ) : (
             <>
               <SummaryBar readings={windowReadings} />

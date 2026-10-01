@@ -215,3 +215,25 @@ export interface WsMessage {
   raw_db: number | null;
   status: ReadingStatus;
 }
+
+// ---------------------------------------------------------------------------
+// Raw window vs archive
+// ---------------------------------------------------------------------------
+
+/**
+ * Days of readings kept one-row-per-poll in the `readings` table. Older
+ * readings are packed into `readings_archive` by the nightly job
+ * (supabase/migrations/20260930_readings_nightly_archive.sql). The web app
+ * keeps a copy in apps/web/src/utils/archiveWindow.ts; keep all three in sync.
+ */
+export const RAW_WINDOW_DAYS = 7;
+
+/**
+ * True when a range starting at `fromTs` may be served from the archive,
+ * which can take a few seconds on a cold database. The nightly job runs once
+ * a day, so the last day before the window may still be raw; erring towards
+ * "archived" only means a loading note shows when it is not strictly needed.
+ */
+export function mayBeArchived(fromTs: number, nowMs: number = Date.now()): boolean {
+  return fromTs < nowMs - RAW_WINDOW_DAYS * 86_400_000;
+}
