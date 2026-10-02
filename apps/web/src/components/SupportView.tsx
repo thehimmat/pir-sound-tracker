@@ -41,8 +41,8 @@ export function SupportView() {
               <a href="https://fly.io" target="_blank" rel="noopener noreferrer" style={link}>Fly.io</a>
             </td>
             <td style={td}>
-              Polling server — captures and OCR-reads the noise monitor every second, 24/7
-              (1 vCPU shared, 1 GB RAM, San Jose)
+              Polling server — reads the noise monitor around the clock, roughly
+              every 2–3 seconds (1 vCPU shared, 1 GB RAM, San Jose)
             </td>
             <td style={{ ...td, textAlign: 'right', fontWeight: 500, color: '#e2e8f0', whiteSpace: 'nowrap' }}>$7.23</td>
           </tr>
@@ -51,11 +51,8 @@ export function SupportView() {
               <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" style={link}>Supabase</a>
             </td>
             <td style={td}>
-              Cloud database — stores ~86,400 readings per day.{' '}
-              <span style={{ color: '#f59e0b' }}>
-                Currently on free tier (500 MB limit). Will need to upgrade to Pro ($25/mo)
-                as the database fills — likely within a few months.
-              </span>
+              Cloud database — keeps every reading since tracking began. Fits within
+              the free tier.
             </td>
             <td style={{ ...td, textAlign: 'right', fontWeight: 500, color: '#94a3b8', whiteSpace: 'nowrap' }}>free*</td>
           </tr>
@@ -72,19 +69,14 @@ export function SupportView() {
             </td>
             <td style={{ ...td, textAlign: 'right', fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap' }}>$7.23/mo</td>
           </tr>
-          <tr>
-            <td style={{ ...td, color: '#7c8ba1', fontSize: 12 }} colSpan={2}>
-              Once Supabase free tier is exhausted
-            </td>
-            <td style={{ ...td, textAlign: 'right', color: '#7c8ba1', fontSize: 12, whiteSpace: 'nowrap' }}>~$32/mo</td>
-          </tr>
         </tbody>
       </table>
 
       <p style={{ fontSize: 12, color: '#7c8ba1', marginBottom: 24 }}>
-        * Supabase free tier caps at 500 MB. At ~86,400 rows/day the database will
-        fill in roughly 4–5 months, at which point the project either upgrades to Pro
-        ($25/mo) or begins archiving older data.
+        * In September and October 2026 the database outgrew the free tier, so for a
+        short while we paid for a bigger plan and the monthly bill went up. We then
+        found a way to store the same readings in much less space, which brought it
+        back into the free tier.
       </p>
 
       <h3 style={h3}>If there's enough support</h3>
