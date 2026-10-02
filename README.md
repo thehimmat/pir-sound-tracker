@@ -1,6 +1,6 @@
 # PIR Sound Tracker
 
-A real-time noise monitoring dashboard for **Portland International Raceway (PIR)**. Every second, a background worker scrapes the raceway's live sound meter display, extracts the dB reading via OCR, and stores it in a cloud database. Anyone can view the current level, today's trace, or historical data going back to when tracking began — no login required.
+A real-time noise monitoring dashboard for **Portland International Raceway (PIR)**. Around the clock, a background worker reads the raceway's live sound meter display every few seconds, extracts the dB reading via OCR, and stores it in a cloud database. Anyone can view the current level, today's trace, or historical data going back to when tracking began — no login required.
 
 **Live site:** [pir-sound-tracker.vercel.app](https://pir-sound-tracker.vercel.app)
 
@@ -8,7 +8,7 @@ A real-time noise monitoring dashboard for **Portland International Raceway (PIR
 
 ## Why this exists
 
-PIR operates a sound level meter with a microphone positioned 50 feet from the track. The reading is published live on the [raceway's website](http://portlandraceway.com/?/about/noise_information), but the page offers no history, no charts, and no way to know if a violation occurred earlier in the day. This project captures and stores every second of that data, making it available for residents, journalists, or anyone with an interest in the noise record.
+PIR operates a sound level meter with a microphone positioned 50 feet from the track. The reading is published live on the [raceway's website](http://portlandraceway.com/?/about/noise_information), but the page offers no history, no charts, and no way to know if a violation occurred earlier in the day. This project captures that data around the clock and stores it, making it available for residents, journalists, or anyone with an interest in the noise record. Today it records a reading roughly every 2–3 seconds; capturing every second is the goal ([#17](https://github.com/thehimmat/pir-sound-tracker/issues/17)).
 
 ---
 
@@ -38,7 +38,7 @@ PIR website (JPEG) → poller → Sharp (crop + threshold) → Tesseract OCR →
                         └──── WebSocket wss://<fly-app>/ws (live readings) ────┘
 ```
 
-1. **Fetch** — the poller fetches a JPEG snapshot of PIR's meter display every second, cache-busted with a timestamp query param.
+1. **Fetch** — the poller fetches a JPEG snapshot of PIR's meter display, cache-busted with a timestamp query param. The loop aims for once a second but runs about every 2–3 seconds on the current Fly machine ([#17](https://github.com/thehimmat/pir-sound-tracker/issues/17)).
 2. **Blank check** — average brightness > 240 → `status=blank` (display is off).
 3. **Stale check** — pixel hash matches previous frame for >10 s → `status=stale`.
 4. **Preprocess** — [Sharp](https://sharp.pixelplumbing.com/) crops the region containing the LAFmax digit and applies a threshold to produce a clean black-and-white image.
@@ -46,7 +46,7 @@ PIR website (JPEG) → poller → Sharp (crop + threshold) → Tesseract OCR →
 6. **Parse & store** — a regex extracts the dB integer; the row is inserted into Supabase with a `status` of `ok`, `ocr_fail`, `error`, `blank`, or `stale`.
 7. **Broadcast** — the new reading is pushed over the poller's own WebSocket (`/ws` on the same port as `/health`) to all connected browser clients. The Live view fills any gap from the API when the socket reconnects. Supabase Realtime is not used: it bills per message per client and would exceed the free quota with a single tab left open.
 
-**Storage.** The last 7 days of readings live in the `readings` table, one row per poll. A nightly `pg_cron` job (`archive-readings-nightly`) packs anything older into `readings_archive`, one row per minute with 60 per-second slots, and deletes it from `readings`. Every second is kept. The `readings_between()` SQL function reads both tables and returns the same per-second rows, so the API and charts don't care where a reading is stored. See `supabase/migrations/20260929_readings_archive.sql`.
+**Storage.** The last 7 days of readings live in the `readings` table, one row per poll. A nightly `pg_cron` job (`archive-readings-nightly`) packs anything older into `readings_archive`, one row per minute with 60 per-second slots, and deletes it from `readings`. Nothing is thrown away: every recorded second stays available. The `readings_between()` SQL function reads both tables and returns the same per-second rows, so the API and charts don't care where a reading is stored. See `supabase/migrations/20260929_readings_archive.sql`.
 
 Because readings are extracted from an image rather than a direct sensor feed, occasional OCR misreads can occur — most often appearing as a sudden isolated spike or dip. These are artefacts, not real changes in noise level.
 
@@ -60,7 +60,7 @@ Because readings are extracted from an image rather than a direct sensor feed, o
 | **Database** | [Supabase](https://supabase.com/) (Postgres), SQL RPCs for aggregated summaries |
 | **API** | Vercel serverless functions (TypeScript) |
 | **Frontend** | React 18, [Recharts](https://recharts.org/), Vite |
-| **Poller hosting** | [Fly.io](https://fly.io/) (always-on, `sjc` region, 512 MB) |
+| **Poller hosting** | [Fly.io](https://fly.io/) (always-on, `sjc` region, shared CPU, 1 GB) |
 | **Web hosting** | [Vercel](https://vercel.com/) |
 | **Uptime monitoring** | UptimeRobot — pings `/health` every 5 min, alerts after 1 h downtime |
 | **Monorepo** | npm workspaces (`packages/types`, `packages/db`, `apps/poller`, `apps/web`, `api/`) |

@@ -1,5 +1,13 @@
 # Capture Rate & Supabase Cost — Assessment (Sep 2026)
 
+> **Update, 2026-10-02: the cost half of this is resolved.** Readings older
+> than 7 days are now packed into a per-minute archive that keeps every
+> second, the database went from 550 MB to about 57 MB, live updates moved off
+> Supabase Realtime onto the poller's own WebSocket, and the project is back on
+> the Supabase Free plan. The capture-rate half is still open and tracked in
+> [#17](https://github.com/thehimmat/pir-sound-tracker/issues/17). Everything below is the original September assessment,
+> left as written.
+
 Goal of the app: store one reading per second whenever PIR's meter is publishing.
 This doc records where we actually are, why, and what drives the Supabase bill.
 Evidence comes from the production DB, Fly logs and machine status pulled on
