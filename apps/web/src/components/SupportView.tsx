@@ -92,9 +92,9 @@ export function SupportView() {
           through most registrars; hosting stays free on Vercel.
         </li>
         <li style={{ marginBottom: 6 }}>
-          <strong style={{ color: '#cbd5e1' }}>Sustained database</strong> — keep the
-          full historical record online indefinitely rather than archiving or truncating
-          when the free tier fills.
+          <strong style={{ color: '#cbd5e1' }}>Every second, kept for good</strong> — improve
+          the recorder so it captures every second instead of every 2–3, and keep the
+          full record online for years to come.
         </li>
         <li>
           <strong style={{ color: '#cbd5e1' }}>More features</strong> — email/SMS alerts
