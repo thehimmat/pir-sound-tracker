@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # matches apps/poller/Dockerfile
+          cache: npm
+
+      - run: npm ci
+
+      # Builds every workspace with tsc (web also runs vite build), so this is
+      # the typecheck for packages/* and apps/*.
+      - name: Build and typecheck workspaces
+        run: npm run build
+
+      # The Vercel functions in api/ aren't a workspace, so check them separately.
+      - name: Typecheck serverless API
+        run: npx tsc -p api/tsconfig.json
+
+      # Supabase-backed tests skip themselves when SUPABASE_URL is unset.
+      - name: Test
+        run: npm test
