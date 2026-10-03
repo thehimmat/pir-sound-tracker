@@ -10,7 +10,7 @@
     "dev:poller": "npm run dev --workspace=apps/poller",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace=packages/types && npm run build --workspace=packages/db && npm run build --workspace=apps/api --workspace=apps/poller --workspace=apps/web",
     "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {

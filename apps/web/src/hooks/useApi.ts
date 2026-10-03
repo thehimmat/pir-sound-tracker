@@ -8,15 +8,12 @@ export function useApi<T>(path: string, deps: unknown[] = []) {
   const [error, setError] = useState<string | null>(null);
 
   const doFetch = (url: string) => {
-    const t0 = Date.now();
-    console.log(`[useApi] GET ${url}`);
     return fetch(url)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`);
         return r.json();
       })
       .then(d => {
-        console.log(`[useApi] GET ${url} → ${Array.isArray(d) ? d.length + ' rows' : 'ok'} (${Date.now() - t0}ms)`);
         setData(d as T);
         setError(null);
         setLoading(false);
