@@ -263,6 +263,13 @@ restarted from the dashboard.
 `set statement_timeout = '25s';` and anything touching more than a day or two of
 `readings` is split into bounded ranges.
 
+**Follow-up (#17):** the poller now queues readings in memory
+(`apps/poller/src/writeQueue.ts`) and writes them in batches. A failed write
+keeps its readings and retries, backing off from 1 s to 30 s, so an outage
+like this one delays readings instead of losing them. The queue holds an hour
+(3,600 readings) and then drops the oldest; readings still queued are lost
+only if the poller itself restarts.
+
 ---
 
 ## Current configuration (as of June 2026)

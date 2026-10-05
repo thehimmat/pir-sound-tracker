@@ -28,6 +28,14 @@ export async function insertReading(
   if (error) throw error;
 }
 
+/** One insert for many readings; Postgres writes all of them or none. */
+export async function insertReadings(
+  rows: Array<{ ts: number; raw_db: number | null; status: ReadingStatus }>,
+): Promise<void> {
+  const { error } = await getClient().from('readings').insert(rows);
+  if (error) throw error;
+}
+
 // Readings are read through the readings_between() SQL function, which
 // serves recent seconds from the raw `readings` table and older ones from the
 // packed per-minute archive (supabase/migrations/20260929_readings_archive.sql).

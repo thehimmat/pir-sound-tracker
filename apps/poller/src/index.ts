@@ -13,10 +13,16 @@ import { simpleHash } from './imageHash.js';
 import { nextMockReading } from './mock.js';
 import { broadcast, attachWsServer, WS_PATH } from './wsServer.js';
 import { startHealthServer, recordPoll, getPollAgeMs } from './healthServer.js';
-import { insertReading } from '@pir/db';
+import { insertReadings } from '@pir/db';
+import { WriteQueue, flushDelayMs } from './writeQueue.js';
 import type { ReadingStatus, WsMessage } from '@pir/types';
 import { getActiveLimit } from '@pir/types';
 import { sendViolationAlert } from './notify.js';
+
+// Readings wait here until the database accepts them (up to an hour at 1 Hz).
+const writeQueue = new WriteQueue({ insertBatch: insertReadings });
+let flushFailures = 0;
+let loggedDropped = 0;
 
 let prevHash: string | null = null;
 let staleFirstTs: number | null = null;
@@ -170,10 +176,8 @@ async function poll(): Promise<void> {
     console.log(`[poller] ${new Date(ts).toISOString()} db=${raw_db} dB${timingStr}`);
   }
 
-  // DB write is fire-and-forget — never blocks the poll loop
-  insertReading(ts, raw_db, status).catch(err => {
-    console.error('[poller] supabase write error:', err instanceof Error ? err.message : err);
-  });
+  // Queued for the flush loop — a slow or failing database never blocks polling
+  writeQueue.enqueue({ ts, raw_db, status });
 
   // Violation alert: fire after 60s of sustained readings above the active
   // limit (variance events, Monday and after-hours 90 dBA, track-local time)
@@ -230,7 +234,8 @@ async function run(): Promise<void> {
       `[poller] 5-min stats — ok=${statOk} fail=${statFail} total=${total}` +
       ` (${total > 0 ? Math.round(statOk / total * 100) : 0}% ok)` +
       ` | avg fetch=${avgFetch}ms pre=${avgPreprocess}ms ocr=${avgOcr}ms` +
-      ` | rss=${Math.round(mem.rss / 1024 / 1024)}MB heap=${Math.round(mem.heapUsed / 1024 / 1024)}MB`
+      ` | rss=${Math.round(mem.rss / 1024 / 1024)}MB heap=${Math.round(mem.heapUsed / 1024 / 1024)}MB` +
+      ` | queued=${writeQueue.size} dropped=${writeQueue.dropped}`
     );
     statOk = statFail = 0;
     statTotalFetchMs = statTotalPreprocessMs = statTotalOcrMs = statOcrCount = 0;
@@ -248,12 +253,49 @@ async function run(): Promise<void> {
   }
 
   loopOnce();
+
+  // Write loop: one batch per tick, every second while healthy, backing off
+  // to 30 s while the database is failing. Each batch goes out in order.
+  async function flushOnce(): Promise<void> {
+    const ok = await writeQueue.flush().catch(() => false);
+    if (ok) {
+      if (flushFailures > 0) console.log(`[poller] supabase writes recovered after ${flushFailures} failed attempts — ${writeQueue.size} readings still queued`);
+      flushFailures = 0;
+    } else if (writeQueue.size > 0) {
+      flushFailures++;
+      if (flushFailures === 1 || flushFailures % 10 === 0) {
+        console.error(`[poller] supabase write failed (${flushFailures}× in a row) — ${writeQueue.size} readings queued`);
+      }
+    }
+    if (writeQueue.dropped > loggedDropped) {
+      console.error(`[poller] write queue full — dropped ${writeQueue.dropped - loggedDropped} oldest readings (${writeQueue.dropped} total)`);
+      loggedDropped = writeQueue.dropped;
+    }
+    setTimeout(flushOnce, flushDelayMs(flushFailures));
+  }
+
+  flushOnce();
+}
+
+// On shutdown (deploys, restarts) keep writing what is still queued for up to
+// 4 s, inside the 5 s Fly allows between SIGTERM and SIGKILL.
+async function shutdown(): Promise<void> {
+  clearInterval(statIntervalHandle);
+  await terminateOcr();
+  const deadline = Date.now() + 4_000;
+  while (writeQueue.size > 0 && Date.now() < deadline) {
+    // flush() is false while the write loop's batch is in flight or the
+    // database is failing; wait a moment and try again until the deadline.
+    if (!(await writeQueue.flush())) await new Promise(r => setTimeout(r, 200));
+  }
+  if (writeQueue.size > 0) console.error(`[poller] exiting with ${writeQueue.size} unwritten readings`);
+  process.exit(0);
 }
 
 run().catch(err => { console.error('[poller] startup error:', err); process.exit(1); });
 
-process.on('SIGINT',  async () => { clearInterval(statIntervalHandle); await terminateOcr(); process.exit(0); });
-process.on('SIGTERM', async () => { clearInterval(statIntervalHandle); await terminateOcr(); process.exit(0); });
+process.on('SIGINT',  () => { void shutdown(); });
+process.on('SIGTERM', () => { void shutdown(); });
 
 process.on('unhandledRejection', (reason) => {
   console.error('[poller] unhandledRejection:', reason);
