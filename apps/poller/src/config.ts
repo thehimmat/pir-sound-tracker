@@ -25,7 +25,7 @@ export const config = {
   cropH:     envInt('CROP_H', 28),   // percent of height — 28% excludes the "LAFmax/dB" label row at ~76%
   pollMs:       envInt('POLL_MS', 1000),
   healthPort:   envInt('HEALTH_PORT', 8080),
-  staleAfterMs: 10_000,
+  staleAfterMs: 30_000,  // identical frames for longer than this → status=stale
   // TESSDATA_PREFIX is read directly in ocr.ts (not via config) to match the
   // env var name that tesseract CLI expects.
 } as const;
