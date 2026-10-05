@@ -38,12 +38,12 @@ PIR website (JPEG) → poller → Sharp (crop + threshold) → Tesseract OCR →
                         └──── WebSocket wss://<fly-app>/ws (live readings) ────┘
 ```
 
-1. **Fetch** — the poller fetches a JPEG snapshot of PIR's meter display, cache-busted with a timestamp query param. The loop aims for once a second but runs about every 2–3 seconds on the current Fly machine ([#17](https://github.com/thehimmat/pir-sound-tracker/issues/17)).
+1. **Fetch** — on every whole second the poller starts a fetch of a JPEG snapshot of PIR's meter display, cache-busted with a timestamp query param, without waiting for the previous fetch or OCR to finish. Processing always takes the newest frame; on the current Fly machine OCR is the bottleneck, so not every second is captured yet ([#17](https://github.com/thehimmat/pir-sound-tracker/issues/17)).
 2. **Blank check** — average brightness > 240 → `status=blank` (display is off).
-3. **Stale check** — pixel hash matches previous frame for >10 s → `status=stale`.
+3. **Stale check** — the same frame for more than 30 s → `status=stale`, and OCR is skipped. Shorter repeats stay `ok`, since the meter can hold a value on a quiet night.
 4. **Preprocess** — [Sharp](https://sharp.pixelplumbing.com/) crops the region containing the LAFmax digit and applies a threshold to produce a clean black-and-white image.
 5. **OCR** — [Tesseract.js](https://tesseract.projectnaptha.com/) (English, page segmentation mode 7) extracts the numerical value.
-6. **Parse & store** — a regex extracts the dB integer; the row is inserted into Supabase with a `status` of `ok`, `ocr_fail`, `error`, `blank`, or `stale`.
+6. **Parse & store** — a regex extracts the dB integer; the row is queued and written to Supabase in batches (retried if the database is unreachable, up to an hour) with a `status` of `ok`, `ocr_fail`, `error`, `blank`, or `stale`.
 7. **Broadcast** — the new reading is pushed over the poller's own WebSocket (`/ws` on the same port as `/health`) to all connected browser clients. The Live view fills any gap from the API when the socket reconnects. Supabase Realtime is not used: it bills per message per client and would exceed the free quota with a single tab left open.
 
 **Storage.** The last 7 days of readings live in the `readings` table, one row per poll. A nightly `pg_cron` job (`archive-readings-nightly`) packs anything older into `readings_archive`, one row per minute with 60 per-second slots, and deletes it from `readings`. Nothing is thrown away: every recorded second stays available. The `readings_between()` SQL function reads both tables and returns the same per-second rows, so the API and charts don't care where a reading is stored. See `supabase/migrations/20260929_readings_archive.sql`.
