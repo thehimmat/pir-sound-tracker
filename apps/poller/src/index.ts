@@ -6,7 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: resolve(__dirname, '../../../.env') });
 
 import { config } from './config.js';
-import { avgBrightness, preprocessImage } from './preprocess.js';
+import { preprocessImage } from './preprocess.js';
 import { ocrImage, terminateOcr } from './ocr.js';
 import { parseDbReading } from './parser.js';
 import { simpleHash } from './imageHash.js';
@@ -20,6 +20,12 @@ import { LatestFrame, startFetchClock, type FetchClock, type FetchResult } from 
 import type { ReadingStatus, WsMessage } from '@pir/types';
 import { getActiveLimit } from '@pir/types';
 import { sendViolationAlert } from './notify.js';
+import { decodePngGrey } from './digits/pngGrey.js';
+import { createDigitReader } from './digits/reader.js';
+import { DIGIT_MODEL } from './digits/digitModel.js';
+import { readValue, meanBrightness, fetchCompleteFrame } from './meterReader.js';
+
+const digitReader = createDigitReader(DIGIT_MODEL);
 
 // Readings wait here until the database accepts them (up to an hour at 1 Hz).
 const writeQueue = new WriteQueue({ insertBatch: insertReadings });
@@ -47,6 +53,11 @@ let statTotalFetchMs = 0;
 let statTotalPreprocessMs = 0;
 let statTotalOcrMs = 0;
 let statOcrCount = 0;
+let statViaTemplate = 0;    // values read by template matching
+let statViaTesseract = 0;   // template rejected, Tesseract read it
+let statUnread = 0;         // neither could read the frame (ocr_fail)
+let statRefetched = 0;      // truncated frames fetched again
+let statCorrupt = 0;        // frames that still failed to decode
 let statSupersededAt = 0;   // frames.skipped at the last stats line
 let statSkippedTicksAt = 0; // fetchClock.skippedTicks at the last stats line
 let statIntervalHandle: ReturnType<typeof setInterval>;
@@ -66,6 +77,20 @@ async function fetchImageBuffer(): Promise<Buffer> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Truncated frames (~6% of responses) are fetched again once, straight away.
+async function fetchFrame(): Promise<Buffer> {
+  const { buf, refetched } = await fetchCompleteFrame(fetchImageBuffer);
+  if (refetched) statRefetched++;
+  return buf;
+}
+
+// Fallback for frames the template reader rejects: Tesseract on the
+// original frame, as before. Rare, so its ~150 ms of CPU barely matters.
+async function readWithTesseract(frame: Buffer): Promise<number | null> {
+  const { text } = await ocrImage(await preprocessImage(frame));
+  return parseDbReading(text);
 }
 
 // Turns one fetched frame into a reading. Runs one frame at a time, always
@@ -90,31 +115,43 @@ async function processFrame(frame: FetchResult): Promise<void> {
       const imgBuf = frame.buf;
       tFetch = frame.fetchMs;
 
-      // 2. Blank check
-      const brightness = await avgBrightness(imgBuf);
-      if (brightness > 240) {
-        status = 'blank';
-      } else {
-        // 3. Stale check: the same frame for more than 30 s. No OCR once stale.
-        if (staleDetector.check(simpleHash(imgBuf), ts)) status = 'stale';
+      // 2. Decode once to greyscale. A frame that is still truncated after
+      // the re-fetch, or fails its CRC, records an error for this second.
+      const t1 = Date.now();
+      let grey: ReturnType<typeof decodePngGrey> | null = null;
+      try {
+        grey = decodePngGrey(imgBuf);
+      } catch (err) {
+        statCorrupt++;
+        console.warn(`[poller] corrupt frame (${imgBuf.length} bytes): ${err instanceof Error ? err.message : err}`);
+        status = 'error';
+      }
+      tPreprocess = Date.now() - t1;
 
-        if (status === 'ok') {
-          // 4 & 5. Preprocess + OCR
-          const t1 = Date.now();
-          const processed = await preprocessImage(imgBuf);
-            tPreprocess = Date.now() - t1;
+      if (grey) {
+        // 3. Blank check
+        if (meanBrightness(grey) > 240) {
+          status = 'blank';
+        } else {
+          // 4. Stale check: the same frame for more than 30 s. No OCR once stale.
+          if (staleDetector.check(simpleHash(imgBuf), ts)) status = 'stale';
 
-          const t2 = Date.now();
-          const { text: ocrText, confidence } = await ocrImage(processed);
-          tOcr = Date.now() - t2;
-
-          // 6. Parse
-          const parsed = parseDbReading(ocrText);
-          if (parsed === null) {
-            status = 'ocr_fail';
-            console.warn(`[poller] OCR_FAIL — confidence=${confidence.toFixed(0)}% raw="${ocrText.trim()}"`);
-          } else {
-            raw_db = parsed;
+          if (status === 'ok') {
+            // 5. Read the number: template matching, Tesseract only if it rejects
+            const t2 = Date.now();
+            const read = await readValue(grey, imgBuf, { reader: digitReader, fallback: readWithTesseract });
+            tOcr = Date.now() - t2;
+            raw_db = read.raw_db;
+            if (read.via === 'template') {
+              statViaTemplate++;
+            } else if (read.via === 'tesseract') {
+              statViaTesseract++;
+              console.warn(`[poller] template rejected (${read.rejectReason}); tesseract read ${read.raw_db}`);
+            } else {
+              statUnread++;
+              status = 'ocr_fail';
+              console.warn(`[poller] OCR_FAIL — template rejected (${read.rejectReason}), tesseract could not read it`);
+            }
           }
         }
       }
@@ -157,7 +194,7 @@ async function processFrame(frame: FetchResult): Promise<void> {
   broadcast(msg);
 
   const timingStr = tFetch || tPreprocess || tOcr
-    ? ` (fetch=${tFetch}ms pre=${tPreprocess}ms ocr=${tOcr}ms)`
+    ? ` (fetch=${tFetch}ms decode=${tPreprocess}ms read=${tOcr}ms)`
     : '';
 
   if (status !== 'ok') {
@@ -226,8 +263,10 @@ async function run(): Promise<void> {
     console.log(
       `[poller] 5-min stats — ok=${statOk} fail=${statFail} total=${total}` +
       ` (${total > 0 ? Math.round(statOk / total * 100) : 0}% ok)` +
-      ` | avg fetch=${avgFetch}ms pre=${avgPreprocess}ms ocr=${avgOcr}ms` +
+      ` | avg fetch=${avgFetch}ms decode=${avgPreprocess}ms read=${avgOcr}ms` +
       ` | rss=${Math.round(mem.rss / 1024 / 1024)}MB heap=${Math.round(mem.heapUsed / 1024 / 1024)}MB` +
+      ` | read template=${statViaTemplate} tesseract=${statViaTesseract} unread=${statUnread}` +
+      ` refetched=${statRefetched} corrupt=${statCorrupt}` +
       ` | queued=${writeQueue.size} dropped=${writeQueue.dropped}` +
       ` | superseded=${frames.skipped - statSupersededAt} skippedTicks=${(fetchClock?.skippedTicks ?? 0) - statSkippedTicksAt}`
     );
@@ -235,6 +274,7 @@ async function run(): Promise<void> {
     statSkippedTicksAt = fetchClock?.skippedTicks ?? 0;
     statOk = statFail = 0;
     statTotalFetchMs = statTotalPreprocessMs = statTotalOcrMs = statOcrCount = 0;
+    statViaTemplate = statViaTesseract = statUnread = statRefetched = statCorrupt = 0;
   }, 5 * 60 * 1000);
 
   // Fetch clock: a fetch starts on every whole second (POLL_MS), whether or
@@ -243,7 +283,7 @@ async function run(): Promise<void> {
   fetchClock = startFetchClock({
     intervalMs: config.pollMs,
     maxInFlight: 3,
-    fetchFrame: config.mockMode ? async () => Buffer.alloc(0) : fetchImageBuffer,
+    fetchFrame: config.mockMode ? async () => Buffer.alloc(0) : fetchFrame,
     onResult: result => frames.offer(result),
   });
 
