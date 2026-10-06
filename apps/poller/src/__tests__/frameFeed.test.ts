@@ -1,6 +1,6 @@
 import { describe, it, mock, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { LatestFrame, msUntilNextTick, startFetchClock, type FetchResult } from '../frameFeed.js';
+import { LatestFrame, msUntilNextTick, nearestTick, startFetchClock, type FetchResult } from '../frameFeed.js';
 
 const frame = (ts: number): FetchResult => ({ ts, fetchMs: 100, buf: Buffer.from([ts % 256]) });
 const failed = (ts: number): FetchResult => ({ ts, fetchMs: 100, error: 'HTTP 503' });
@@ -64,11 +64,21 @@ describe('msUntilNextTick', () => {
   });
 });
 
+describe('nearestTick', () => {
+  it('rounds to the nearest whole second', () => {
+    assert.equal(nearestTick(12_999, 1_000), 13_000);
+    assert.equal(nearestTick(13_000, 1_000), 13_000);
+    assert.equal(nearestTick(13_001, 1_000), 13_000);
+    assert.equal(nearestTick(13_499, 1_000), 13_000);
+    assert.equal(nearestTick(13_500, 1_000), 14_000);
+  });
+});
+
 describe('startFetchClock', () => {
   afterEach(() => mock.timers.reset());
 
-  function setup(opts: { maxInFlight?: number } = {}) {
-    mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10_000 });
+  function setup(opts: { maxInFlight?: number; now?: number } = {}) {
+    mock.timers.enable({ apis: ['setTimeout', 'Date'], now: opts.now ?? 10_000 });
     const results: FetchResult[] = [];
     const releases: Array<(buf: Buffer) => void> = [];
     let started = 0;
@@ -126,6 +136,28 @@ describe('startFetchClock', () => {
     mock.timers.tick(1_000);                   // skipped
     assert.equal(t.started(), 2);
     assert.equal(t.clock.skippedTicks, 1);
+    t.clock.stop();
+  });
+
+  it('stamps a fetch that starts just before a whole second with that second', async () => {
+    const t = setup({ now: 10_999 });          // first fetch fires 1 ms early
+    t.releases[0](Buffer.from([0]));
+    await settle();
+    assert.equal(t.results[0].ts, 11_000);
+    t.clock.stop();
+  });
+
+  it('skips the tick 1 ms after an early fetch instead of fetching the same second twice', async () => {
+    // Production logs showed 12.999 then 13.000: two rows for second 13, none for 14.
+    const t = setup({ now: 10_999 });          // fetch stamped 11_000
+    mock.timers.tick(1);                        // tick at 11_000: same second
+    assert.equal(t.started(), 1);
+    assert.equal(t.clock.skippedTicks, 1);
+    mock.timers.tick(1_000);                    // 12_000: next second, fetched
+    assert.equal(t.started(), 2);
+    for (const r of t.releases) r(Buffer.from([0]));
+    await settle();
+    assert.deepEqual(t.results.map(r => r.ts).sort(), [11_000, 12_000]);
     t.clock.stop();
   });
 
