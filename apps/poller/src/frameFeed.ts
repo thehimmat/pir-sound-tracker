@@ -7,7 +7,7 @@
  */
 
 export interface FetchResult {
-  /** When the fetch started; this is the reading's timestamp. */
+  /** The whole second the fetch was started for; this is the reading's timestamp. */
   ts: number;
   fetchMs: number;
   buf?: Buffer;
@@ -54,6 +54,11 @@ export class LatestFrame {
   }
 }
 
+/** `now` rounded to the nearest multiple of intervalMs. */
+export function nearestTick(now: number, intervalMs: number): number {
+  return Math.round(now / intervalMs) * intervalMs;
+}
+
 /** Milliseconds from `now` to the next multiple of intervalMs. */
 export function msUntilNextTick(now: number, intervalMs: number): number {
   return intervalMs - (now % intervalMs);
@@ -61,7 +66,8 @@ export function msUntilNextTick(now: number, intervalMs: number): number {
 
 export interface FetchClockOptions {
   intervalMs: number;
-  /** Ticks are skipped while this many fetches are still running. */
+  /** Ticks are skipped while this many fetches are still running, or when
+   *  the tick lands in a second that already has a fetch. */
   maxInFlight: number;
   fetchFrame: () => Promise<Buffer>;
   onResult: (result: FetchResult) => void;
@@ -75,19 +81,26 @@ export interface FetchClock {
 export function startFetchClock(opts: FetchClockOptions): FetchClock {
   let inFlight = 0;
   let skippedTicks = 0;
+  let lastTs = -Infinity;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
 
   function tick(): void {
     if (stopped) return;
-    if (inFlight >= opts.maxInFlight) {
+    // A timer can fire a millisecond before the second it was set for
+    // (12.999). Stamping with the nearest second keeps that reading in
+    // second 13, and the tick rescheduled 1 ms later for 13.000 is skipped
+    // rather than fetching second 13 twice and leaving 14 empty.
+    const ts = nearestTick(Date.now(), opts.intervalMs);
+    if (inFlight >= opts.maxInFlight || ts <= lastTs) {
       skippedTicks++;
     } else {
-      const ts = Date.now();
+      lastTs = ts;
+      const started = Date.now();
       inFlight++;
       opts.fetchFrame().then(
-        buf => opts.onResult({ ts, fetchMs: Date.now() - ts, buf }),
-        err => opts.onResult({ ts, fetchMs: Date.now() - ts, error: err instanceof Error ? err.message : String(err) }),
+        buf => opts.onResult({ ts, fetchMs: Date.now() - started, buf }),
+        err => opts.onResult({ ts, fetchMs: Date.now() - started, error: err instanceof Error ? err.message : String(err) }),
       ).finally(() => { inFlight--; });
     }
     timer = setTimeout(tick, msUntilNextTick(Date.now(), opts.intervalMs));
