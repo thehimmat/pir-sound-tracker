@@ -60,7 +60,7 @@ Because readings are extracted from an image rather than a direct sensor feed, o
 | **Database** | [Supabase](https://supabase.com/) (Postgres), SQL RPCs for aggregated summaries |
 | **API** | Vercel serverless functions (TypeScript) |
 | **Frontend** | React 18, [Recharts](https://recharts.org/), Vite |
-| **Poller hosting** | [Fly.io](https://fly.io/) (always-on, `sjc` region, shared CPU, 1 GB) |
+| **Poller hosting** | [Fly.io](https://fly.io/) (always-on, `sjc` region, shared CPU, 512 MB) |
 | **Web hosting** | [Vercel](https://vercel.com/) |
 | **Uptime monitoring** | UptimeRobot — pings `/health` every 5 min, alerts after 1 h downtime |
 | **Monorepo** | npm workspaces (`packages/types`, `packages/db`, `apps/poller`, `apps/web`, `api/`) |

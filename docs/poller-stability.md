@@ -39,6 +39,22 @@ Headroom is now ~600MB, well clear of the observed RSS.
 
 **Status:** Resolved. With 1GB the OOM loop has not recurred.
 
+**Update (2026-10-13): back to 512 MB.** The memory profile that caused the
+OOM loop is gone. Tesseract.js (model loaded into the Node heap) was replaced
+by the Tesseract CLI, and since #23 the poller reads digits by template
+matching, running Tesseract only as a separate short-lived process on frames
+the template reader rejects. Over the week before the change, on 1 GB:
+
+- Poller RSS 105–125 MB (5-minute stats line).
+- Whole-VM memory steady at ~270 MiB on Fly's Metrics graph, including OS and
+  page cache, with no spike during a loud session (Oct 9–10, readings up to
+  105.9 dB).
+- No restarts.
+
+That leaves ~240 MiB of headroom on 512 MB. If the OOM loop above ever
+recurs, scale back with `fly scale memory 1024 -a pir-sound-tracker-poller`
+and restart the machine if it is `stopped`.
+
 ---
 
 ## Root cause #2 — Two Fly machines running simultaneously
