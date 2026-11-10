@@ -1,5 +1,6 @@
 # The poller on Oracle's kosh-db VM (README.md here). Run Compose from this folder: it reads .env here.
-# The project name keeps it apart from kosh's stack (selfhost) and the radio (radio) on the same VM.
+# The project name keeps it apart from kosh's database (selfhost), the gateway (atthebunga-server)
+# and the radio (radio) on the same VM.
 name: pir
 
 services:
@@ -19,8 +20,8 @@ services:
       MOCK_MODE: "false"
       HEALTH_PORT: "8080"
     ports:
-      # Host-side only, for deploy.sh's health check and debugging. The public way in is kosh's
-      # gateway (gurmukhi-kosh selfhost/sites/pir.caddy).
+      # Host-side only, for deploy.sh's health check and debugging. The public way in is
+      # atthebunga-server's gateway (its sites/pir.caddy).
       - "127.0.0.1:3003:8080"
     networks:
       pir-edge:
@@ -34,7 +35,7 @@ services:
       start_period: 60s
       retries: 3
 
-# Created by gurmukhi-kosh's gateway (selfhost/docker-compose.apps.yml); this stack only joins it.
+# Created by thehimmat/atthebunga-server's host-setup.sh; this stack only joins it.
 networks:
   pir-edge:
     external: true

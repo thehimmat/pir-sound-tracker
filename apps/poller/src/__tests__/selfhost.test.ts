@@ -7,7 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // The poller on Oracle (apps/poller/selfhost/README.md): its own Compose project on kosh-db,
-// reached through gurmukhi-kosh's gateway (selfhost/sites/pir.caddy) over the pir-edge network.
+// reached through atthebunga-server's gateway (sites/pir.caddy) over the pir-edge network.
 // Compiled to dist/__tests__, so apps/poller is two levels up.
 const poller = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const read = (p: string) => readFileSync(join(poller, p), 'utf8');
