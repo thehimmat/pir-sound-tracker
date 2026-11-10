@@ -1,0 +1,40 @@
+# The poller on Oracle's kosh-db VM (README.md here). Run Compose from this folder: it reads .env here.
+# The project name keeps it apart from kosh's stack (selfhost) and the radio (radio) on the same VM.
+name: pir
+
+services:
+  poller:
+    build:
+      context: ../../..
+      dockerfile: apps/poller/Dockerfile
+    image: pir-poller:local
+    restart: unless-stopped
+    # Shared VM: the database keeps most of the memory. Fly ran this in 512 MB.
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: "3" }
+    env_file: .env
+    environment:
+      MOCK_MODE: "false"
+      HEALTH_PORT: "8080"
+    ports:
+      # Host-side only, for deploy.sh's health check and debugging. The public way in is kosh's
+      # gateway (gurmukhi-kosh selfhost/sites/pir.caddy).
+      - "127.0.0.1:3003:8080"
+    networks:
+      pir-edge:
+        aliases: [pir-poller]
+    # /ping, not /health: /health turns 503 after an hour without a reading, which happens when the
+    # track's meter is off, and isn't a reason to restart.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/ping').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+# Created by gurmukhi-kosh's gateway (selfhost/docker-compose.apps.yml); this stack only joins it.
+networks:
+  pir-edge:
+    external: true

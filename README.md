@@ -60,7 +60,7 @@ Because readings are extracted from an image rather than a direct sensor feed, o
 | **Database** | [Supabase](https://supabase.com/) (Postgres), SQL RPCs for aggregated summaries |
 | **API** | Vercel serverless functions (TypeScript) |
 | **Frontend** | React 18, [Recharts](https://recharts.org/), Vite |
-| **Poller hosting** | [Fly.io](https://fly.io/) (always-on, `sjc` region, shared CPU, 512 MB) |
+| **Poller hosting** | Oracle Cloud Always Free VM (Docker Compose, behind Caddy); see [apps/poller/selfhost](apps/poller/selfhost/README.md) |
 | **Web hosting** | [Vercel](https://vercel.com/) |
 | **Uptime monitoring** | UptimeRobot — pings `/health` every 5 min, alerts after 1 h downtime |
 | **Monorepo** | npm workspaces (`packages/types`, `packages/db`, `apps/poller`, `apps/web`, `api/`) |
@@ -113,24 +113,19 @@ npm run dev:web      # just the frontend (uses Vite dev server)
 
 The frontend will be at `http://localhost:5173`. The poller serves `/ping`, `/health` and the live-readings WebSocket `/ws` on port 8080 (`HEALTH_PORT`); the dev frontend connects to `ws://localhost:8080/ws`. Set `MOCK_MODE=true` in `.env` to run the poller without the live image feed (generates synthetic readings).
 
-Production builds connect to `wss://pir-sound-tracker-poller.fly.dev/ws`. Set `VITE_WS_URL` at build time (a Vercel environment variable) to point elsewhere.
+Production builds connect to `wss://pir.141-148-39-45.sslip.io/ws`. Set `VITE_WS_URL` at build time (a Vercel environment variable) to point elsewhere.
 
 ---
 
 ## Deploying the poller
 
-The poller runs on Fly.io as an always-on container. The Docker image is built from the monorepo root so all workspace packages are available.
+The poller runs as an always-on container on an Oracle Cloud VM, built there from the monorepo root so all workspace packages are available. Setup, deploys and rollback: [apps/poller/selfhost/README.md](apps/poller/selfhost/README.md).
 
 ```bash
-# From the repo root:
-fly deploy --config apps/poller/fly.toml --dockerfile apps/poller/Dockerfile
-
-# Secrets (set once):
-fly secrets set IMAGE_URL=... SUPABASE_URL=... SUPABASE_ANON_KEY=... \
-  --app pir-sound-tracker-poller
+ssh ubuntu@141.148.39.45 'sh /opt/pir/apps/poller/selfhost/scripts/deploy.sh'
 ```
 
-The container exposes port 8080 with `/ping` (Fly's liveness check, always 200), `/health` (503 only after an hour without a poll; the body includes `wsClients`, the number of live-view browsers connected) and `/ws` (the live-readings WebSocket, reachable as `wss://pir-sound-tracker-poller.fly.dev/ws`). UptimeRobot watches the Vercel `/api/health` route instead, which checks the DB for a recent row.
+The container exposes port 8080 with `/ping` (the container's liveness check, always 200), `/health` (503 only after an hour without a poll; the body includes `wsClients`, the number of live-view browsers connected) and `/ws` (the live-readings WebSocket, reachable as `wss://pir.141-148-39-45.sslip.io/ws`). UptimeRobot watches the Vercel `/api/health` route instead, which checks the DB for a recent row.
 
 ---
 

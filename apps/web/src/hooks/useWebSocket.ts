@@ -4,11 +4,11 @@ import type { WsMessage } from '@pir/types';
 // Live readings come straight from the poller's WebSocket (attached to its
 // health server at /ws), not from Supabase Realtime. Override with
 // VITE_WS_URL; otherwise dev talks to a local poller and production builds
-// talk to the Fly app.
+// talk to the poller on the Oracle VM (apps/poller/selfhost).
 const WS_URL: string =
   import.meta.env.VITE_WS_URL
   ?? (import.meta.env.PROD
-    ? 'wss://pir-sound-tracker-poller.fly.dev/ws'
+    ? 'wss://pir.141-148-39-45.sslip.io/ws'
     : 'ws://localhost:8080/ws');
 
 const RECONNECT_MIN_MS = 1_000;
