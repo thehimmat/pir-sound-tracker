@@ -1,7 +1,7 @@
 # Poller on Oracle
 
 The poller's home after Fly.io: one container on the Oracle VM `kosh-db` (Ashburn, Ampere A1,
-`141.148.39.45`), next to gurmukhi-kosh's stack and the radio, which share Always Free's whole A1
+`141.148.39.45`), next to gurmukhi-kosh's database, the atthebunga-server sites and the radio, which share Always Free's whole A1
 allowance. Fly cost about $5 a month for this machine alone.
 
 - **Code and settings on the server:** `/opt/pir` (main). Secrets in
@@ -9,7 +9,7 @@ allowance. Fly cost about $5 a month for this machine alone.
   `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`,
   `VAPID_PRIVATE_KEY`, the same set Fly had.
 - **Way in:** `https://pir.141-148-39-45.sslip.io` (`/ping`, `/health`, `/ws`) through
-  gurmukhi-kosh's gateway (`selfhost/sites/pir.caddy`), which reaches the poller over the `pir-edge`
+  [atthebunga-server](https://github.com/thehimmat/atthebunga-server)'s gateway (`sites/pir.caddy`), which reaches the poller over the `pir-edge`
   Docker network and nothing else. Let's Encrypt; not behind Cloudflare.
 - **Image:** built on the VM from this repo (arm64), with `apps/poller/eng.traineddata`, which is
   gitignored and copied over once.
@@ -34,8 +34,8 @@ ssh ubuntu@141.148.39.45 '(umask 077 && cat > /opt/pir/apps/poller/selfhost/.env
 ssh ubuntu@141.148.39.45 'sh /opt/pir/apps/poller/selfhost/scripts/deploy.sh'
 ```
 
-The gateway needs gurmukhi-kosh's `pir.caddy` and `pir-edge` network deployed first; until then
-the public name answers 502.
+The gateway needs atthebunga-server's `sites/pir.caddy` and the `pir-edge` network (its
+`host-setup.sh` creates it) deployed first; until then the public name answers 502.
 
 ## Deploy
 
